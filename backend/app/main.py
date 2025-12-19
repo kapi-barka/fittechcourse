@@ -4,6 +4,7 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.core.config import settings
 from app.api import api_router
 from app.db.database import init_db
@@ -25,9 +26,17 @@ app = FastAPI(
 )
 
 # Настройка CORS для работы с фронтендом
+# Убеждаемся, что CORS_ORIGINS - это список
+cors_origins = settings.CORS_ORIGINS
+if not isinstance(cors_origins, list):
+    cors_origins = [cors_origins] if cors_origins else []
+
+logger = logging.getLogger(__name__)
+logger.info(f"Configuring CORS with origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +48,21 @@ async def startup_event():
     """
     Инициализация при запуске приложения
     """
-    print(f"🚀 Starting {settings.APP_NAME} v{settings.VERSION}")
+    logger = logging.getLogger(__name__)
+    logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.VERSION}")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"CORS Origins: {settings.CORS_ORIGINS}")
+    
+    # Проверка подключения к БД
+    try:
+        from app.db.database import engine
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("✅ Database connection successful")
+    except Exception as e:
+        logger.error(f"❌ Database connection failed: {e}")
+        # Не падаем при старте, но логируем ошибку
+    
     # В продакшене используем Alembic вместо init_db()
     # await init_db()
 

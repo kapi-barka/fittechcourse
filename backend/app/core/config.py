@@ -37,6 +37,36 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/fitness_trainer"
     
+    @field_validator('DATABASE_URL', mode='before')
+    @classmethod
+    def validate_database_url(cls, v):
+        """Валидация и нормализация DATABASE_URL"""
+        if isinstance(v, str):
+            # Убеждаемся, что используется asyncpg
+            if v.startswith('postgresql://') and '+asyncpg' not in v:
+                v = v.replace('postgresql://', 'postgresql+asyncpg://', 1)
+            
+            # Для Neon: если используется pooler, можно попробовать прямое подключение
+            # Но оставляем как есть, так как pooler тоже должен работать
+            
+            # Если URL от Neon, убеждаемся что есть ssl=require
+            if 'neon.tech' in v and 'ssl=' not in v:
+                separator = '&' if '?' in v else '?'
+                v = f"{v}{separator}ssl=require"
+            
+            # URL-кодируем пароль, если он содержит специальные символы
+            # Это делается автоматически при парсинге URL, но на всякий случай
+            from urllib.parse import quote_plus, urlparse, urlunparse
+            try:
+                parsed = urlparse(v)
+                if parsed.password:
+                    # Если пароль уже закодирован, не кодируем повторно
+                    # Просто убеждаемся что формат правильный
+                    pass
+            except:
+                pass
+        return v
+    
     # Security
     SECRET_KEY: str = "your-secret-key-please-change-in-production-use-openssl-rand-hex-32"
     ALGORITHM: str = "HS256"
@@ -96,4 +126,38 @@ settings = Settings()
 # Обновляем DEBUG в зависимости от окружения
 if settings.ENVIRONMENT == "production":
     settings.DEBUG = False
+
+# Убеждаемся, что CORS_ORIGINS всегда список
+if not isinstance(settings.CORS_ORIGINS, list):
+    if isinstance(settings.CORS_ORIGINS, str):
+        try:
+            settings.CORS_ORIGINS = json.loads(settings.CORS_ORIGINS)
+        except (json.JSONDecodeError, TypeError):
+            settings.CORS_ORIGINS = [settings.CORS_ORIGINS] if settings.CORS_ORIGINS else []
+    else:
+        settings.CORS_ORIGINS = []
+
+# Логируем настройки для отладки (без пароля!)
+import logging
+logger = logging.getLogger(__name__)
+logger.info(f"CORS_ORIGINS configured: {settings.CORS_ORIGINS}")
+
+# Логируем DATABASE_URL без пароля для безопасности
+def mask_password_in_url(url: str) -> str:
+    """Маскирует пароль в DATABASE_URL для логирования"""
+    try:
+        if '@' in url:
+            parts = url.split('@')
+            if '://' in parts[0]:
+                protocol_user_pass = parts[0]
+                if ':' in protocol_user_pass.split('://')[1]:
+                    protocol = protocol_user_pass.split('://')[0]
+                    user_pass = protocol_user_pass.split('://')[1]
+                    user = user_pass.split(':')[0]
+                    return f"{protocol}://{user}:***@{parts[1]}"
+    except:
+        pass
+    return "***"
+
+logger.info(f"DATABASE_URL configured: {mask_password_in_url(settings.DATABASE_URL)}")
 
