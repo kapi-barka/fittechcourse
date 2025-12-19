@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -72,21 +73,6 @@ export default function CreateProgramPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [error, setError] = useState('')
-
-  const toggleMuscle = (svgId: string) => {
-    // Преобразуем SVG ID в стандартные названия
-    const standardGroups = svgIdToStandardMuscleGroups(svgId)
-    if (standardGroups.length === 0) return
-    
-    // Используем первую группу (или можно добавить все)
-    const muscleGroup = standardGroups[0]
-    
-    if (targetMuscles.includes(muscleGroup)) {
-      setTargetMuscles(targetMuscles.filter(m => m !== muscleGroup))
-    } else {
-      setTargetMuscles([...targetMuscles, muscleGroup])
-    }
-  }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -226,10 +212,13 @@ export default function CreateProgramPage() {
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/5">
                   {imageUrl ? (
                     <div className="relative w-full max-w-md h-48 rounded-lg overflow-hidden mb-4">
-                      <img
+                      <Image
                         src={imageUrl}
                         alt="Program cover"
+                        width={600}
+                        height={200}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                       <Button
                         type="button"

@@ -6,6 +6,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 import { Camera, Upload, X, Keyboard, Loader2 } from 'lucide-react'
@@ -381,10 +382,13 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
             >
                 {previewImage ? (
                     <div className="relative w-full h-full">
-                        <img 
+                        <Image 
                             src={previewImage} 
                             alt="Предпросмотр" 
+                            width={400}
+                            height={400}
                             className="w-full h-full object-contain"
+                            unoptimized
                         />
                         <Button
                             variant="ghost"

@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -287,10 +288,13 @@ export default function ProgramDetailPage() {
             {/* Фоновое изображение */}
             <div className="h-48 md:h-64 bg-gray-900 relative">
               {program.image_url ? (
-                <img
+                <Image
                   src={program.image_url}
                   alt={program.title}
+                  width={1200}
+                  height={400}
                   className="w-full h-full object-cover opacity-60"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full bg-primary/80" />

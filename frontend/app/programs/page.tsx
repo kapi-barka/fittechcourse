@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { programsAPI, Program } from '@/lib/api'
 import { MuscleMap } from '@/components/ui/MuscleMap'
-import { normalizeMuscleGroup, standardMuscleGroupToSvgIds, STANDARD_MUSCLE_GROUPS } from '@/lib/muscleGroups'
+import { normalizeMuscleGroup, standardMuscleGroupToSvgIds, StandardMuscleGroup } from '@/lib/muscleGroups'
 
 const MUSCLE_GROUP_LABELS: Record<string, string> = {
   'chest': 'Грудь',
@@ -211,7 +211,7 @@ export default function ProgramsPage() {
                 <CardContent className="flex justify-center p-0 pb-4">
                   <MuscleMap
                     mode={mapMode}
-                    selectedMuscles={muscleFilter ? standardMuscleGroupToSvgIds(muscleFilter as any, mapMode) : []}
+                    selectedMuscles={muscleFilter ? standardMuscleGroupToSvgIds(muscleFilter as StandardMuscleGroup, mapMode) : []}
                     onSelect={handleMuscleSelect}
                     className="h-[500px] w-full"
                   />
