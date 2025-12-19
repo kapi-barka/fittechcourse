@@ -140,7 +140,7 @@ export const ExerciseForm = ({
                         <MuscleMap
                             mode={mapMode}
                             selectedMuscles={formData.muscle_groups.flatMap(mg => 
-                                standardMuscleGroupToSvgIds(mg as any, mapMode)
+                                standardMuscleGroupToSvgIds(mg as StandardMuscleGroup, mapMode)
                             )}
                             onSelect={toggleMuscle}
                             className="h-full w-auto"

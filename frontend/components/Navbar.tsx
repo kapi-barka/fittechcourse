@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
@@ -69,10 +70,13 @@ export const Navbar = () => {
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center space-x-2">
             <div className="relative h-10 w-10 overflow-hidden rounded-lg">
-              <img
+              <Image
                 src="/logo.png"
                 alt="Logo"
+                width={40}
+                height={40}
                 className="h-full w-full object-cover"
+                unoptimized
               />
             </div>
             <span className="hidden font-extrabold text-xl sm:inline-block">
@@ -108,7 +112,7 @@ export const Navbar = () => {
                 <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
               </div>
               {user?.profile?.avatar_url ? (
-                <img src={user.profile.avatar_url} alt="Avatar" className="h-9 w-9 rounded-full object-cover border border-border" />
+                <Image src={user.profile.avatar_url} alt="Avatar" width={36} height={36} className="h-9 w-9 rounded-full object-cover border border-border" unoptimized />
               ) : (
                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center border border-border">
                   <span className="text-sm font-bold text-primary">
@@ -159,7 +163,7 @@ export const Navbar = () => {
               <Link href="/account" className="block px-3 py-2 hover:bg-accent rounded-md transition-colors" onClick={() => setMobileMenuOpen(false)}>
                 <div className="flex items-center space-x-3">
                   {user?.profile?.avatar_url ? (
-                    <img src={user.profile.avatar_url} alt="Ava" className="h-8 w-8 rounded-full object-cover" />
+                    <Image src={user.profile.avatar_url} alt="Ava" width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="text-xs font-bold text-primary">

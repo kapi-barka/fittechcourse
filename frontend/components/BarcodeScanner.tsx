@@ -560,7 +560,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                 capture="environment"
                 className="hidden"
                 onChange={handleFileUpload}
-                onClick={(e) => {
+                onClick={() => {
                     console.log('🟢 INPUT CLICKED (это может открыть камеру напрямую)')
                 }}
                 disabled={isProcessing}

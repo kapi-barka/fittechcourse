@@ -4,6 +4,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { Button } from './ui/Button'
 import { Upload, X, Image as ImageIcon, Loader2, Camera } from 'lucide-react'
 import { nutritionAPI } from '@/lib/api'
@@ -291,10 +292,13 @@ export function PhotoRecognition({ onRecognize }: PhotoRecognitionProps) {
             >
                 {previewImage ? (
                     <div className="relative w-full h-full">
-                        <img 
+                        <Image 
                             src={previewImage} 
                             alt="Предпросмотр" 
+                            width={400}
+                            height={400}
                             className="w-full h-full object-contain"
+                            unoptimized
                         />
                         <Button
                             variant="ghost"

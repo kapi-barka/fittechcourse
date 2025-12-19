@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { analyticsAPI } from '@/lib/api'
 import { Calculator, Loader2, AlertCircle } from 'lucide-react'
 import { AxiosError } from 'axios'
