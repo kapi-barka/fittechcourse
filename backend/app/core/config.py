@@ -4,8 +4,10 @@
 Поддерживает разные окружения: development и production
 """
 import os
+import json
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+from typing import Optional, Union
+from pydantic import field_validator
 
 
 def get_env_files() -> list[str]:
@@ -47,7 +49,24 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # CORS
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: Union[str, list] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Парсит CORS_ORIGINS из строки JSON или оставляет как список"""
+        if isinstance(v, str):
+            try:
+                # Пытаемся распарсить как JSON
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                # Если это строка с одним URL
+                return [parsed] if parsed else []
+            except (json.JSONDecodeError, TypeError):
+                # Если не JSON, возвращаем как список с одним элементом
+                return [v] if v else []
+        return v if isinstance(v, list) else []
     
     # Cloudinary
     CLOUDINARY_CLOUD_NAME: str = "dbx0kd3lt"
