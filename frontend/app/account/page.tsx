@@ -5,11 +5,12 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { uploadAPI, usersAPI } from '@/lib/api'
+import { uploadAPI, usersAPI, UserProfile } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { User, Loader2, Camera, Save } from 'lucide-react'
 import { toast } from 'react-toastify'
@@ -41,7 +42,7 @@ export default function AccountPage() {
     const handleSaveProfile = async () => {
         setIsLoading(true)
         try {
-            const updateData: any = { full_name: fullName }
+            const updateData: Partial<UserProfile> = { full_name: fullName }
             
             // Добавляем рост, если указан
             if (height !== '' && height !== undefined) {
@@ -109,10 +110,13 @@ export default function AccountPage() {
                                     onClick={handleAvatarClick}
                                 >
                                     {user?.profile?.avatar_url ? (
-                                        <img
+                                        <Image
                                             src={user.profile.avatar_url}
                                             alt="Avatar"
+                                            width={128}
+                                            height={128}
                                             className="h-full w-full object-cover"
+                                            unoptimized
                                         />
                                     ) : (
                                         <div className="h-full w-full flex items-center justify-center bg-muted text-muted-foreground">

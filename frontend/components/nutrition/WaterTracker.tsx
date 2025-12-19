@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { nutritionAPI } from '@/lib/api'
 import { Droplet, Plus, Minus } from 'lucide-react'
 import { toast } from 'react-toastify'
+import { AxiosError } from 'axios'
 
 export function WaterTracker() {
   const [amount, setAmount] = useState(250)
@@ -46,9 +47,12 @@ export function WaterTracker() {
       await fetchHydration()
       setAmount(250) // Сброс к стандартному значению
       toast.success(`Добавлено ${amount} мл воды`)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to log water:', error)
-      toast.error(error.response?.data?.detail || 'Ошибка при записи воды')
+      const errorMessage = error instanceof AxiosError 
+        ? error.response?.data?.detail || 'Ошибка при записи воды'
+        : 'Ошибка при записи воды'
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

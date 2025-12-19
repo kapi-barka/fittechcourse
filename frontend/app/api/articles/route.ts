@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 
+interface Article {
+  id: string
+  title: string
+  excerpt: string
+  tags: string[]
+  cover_image_url: string
+  created_at: string
+  views_count: number
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -15,7 +25,7 @@ export async function GET(request: Request) {
     
     if (id) {
       // Возвращаем конкретную статью
-      const article = articlesJson.find((a: any) => a.id === id)
+      const article = (articlesJson as Article[]).find((a) => a.id === id)
       if (!article) {
         return NextResponse.json({ error: 'Article not found' }, { status: 404 })
       }

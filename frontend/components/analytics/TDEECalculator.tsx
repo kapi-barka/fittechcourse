@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { analyticsAPI } from '@/lib/api'
 import { Calculator, Loader2, AlertCircle } from 'lucide-react'
+import { AxiosError } from 'axios'
 
 export function TDEECalculator() {
   const [tdeeData, setTdeeData] = useState<{
@@ -23,8 +24,10 @@ export function TDEECalculator() {
     try {
       const response = await analyticsAPI.getTDEE()
       setTdeeData(response.data)
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || 'Ошибка при расчете TDEE'
+    } catch (err) {
+      const errorMessage = err instanceof AxiosError
+        ? err.response?.data?.detail || 'Ошибка при расчете TDEE'
+        : 'Ошибка при расчете TDEE'
       setError(errorMessage)
       setTdeeData(null)
     } finally {
