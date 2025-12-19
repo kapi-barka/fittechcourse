@@ -4,6 +4,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -96,10 +97,13 @@ export default function ArticlesPage() {
                   <Card className="hover:shadow-lg transition-all cursor-pointer h-full border-0">
                     {article.cover_image_url && (
                       <div className="h-48 overflow-hidden rounded-t-lg">
-                        <img
+                        <Image
                           src={article.cover_image_url}
                           alt={article.title}
+                          width={400}
+                          height={200}
                           className="w-full h-full object-cover"
+                          unoptimized
                         />
                       </div>
                     )}

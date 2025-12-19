@@ -1,9 +1,8 @@
 'use client'
 
-'use client'
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -91,10 +90,13 @@ export default function MyProgramsPage() {
         <Card className="hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full border-0 shadow">
             <div className="h-32 bg-gray-200 dark:bg-gray-800 relative">
                 {program.image_url ? (
-                    <img
+                    <Image
                         src={program.image_url}
                         alt={program.title}
+                        width={400}
+                        height={128}
                         className="w-full h-full object-cover"
+                        unoptimized
                     />
                 ) : (
                     <div className="w-full h-full bg-primary/80 flex items-center justify-center">

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 import { getDayName } from '@/lib/utils'
-import { STANDARD_MUSCLE_GROUPS, svgIdToStandardMuscleGroups, type StandardMuscleGroup } from '@/lib/muscleGroups'
+import { STANDARD_MUSCLE_GROUPS, type StandardMuscleGroup } from '@/lib/muscleGroups'
 
 interface ProgramDetail {
   exercise_id: string

@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -54,10 +55,13 @@ export default function LoginPage() {
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <div className="relative h-16 w-16 overflow-hidden rounded-2xl shadow-lg">
-              <img
+              <Image
                 src="/logo.png"
                 alt="Logo"
+                width={64}
+                height={64}
                 className="h-full w-full object-cover"
+                unoptimized
               />
             </div>
             <div>

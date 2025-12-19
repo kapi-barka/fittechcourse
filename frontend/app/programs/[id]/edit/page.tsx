@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -289,10 +290,13 @@ export default function EditProgramPage() {
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/5">
                   {imageUrl ? (
                     <div className="relative w-full max-w-md h-48 rounded-lg overflow-hidden mb-4">
-                      <img
+                      <Image
                         src={imageUrl}
                         alt="Program cover"
+                        width={600}
+                        height={200}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                       <Button
                         type="button"
