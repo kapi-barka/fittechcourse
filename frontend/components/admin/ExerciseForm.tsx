@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { MuscleMap } from '@/components/ui/MuscleMap'
-import { svgIdToStandardMuscleGroups, standardMuscleGroupToSvgIds } from '@/lib/muscleGroups'
+import { svgIdToStandardMuscleGroups, standardMuscleGroupToSvgIds, type StandardMuscleGroup } from '@/lib/muscleGroups'
 import { X, Plus, Video, RefreshCw, Upload, Loader2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 
