@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { usersAPI, exercisesAPI, User, Exercise } from '@/lib/api'
 import {
-  Shield,
   Users,
   Dumbbell,
   UserCheck,

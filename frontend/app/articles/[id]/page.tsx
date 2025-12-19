@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -27,11 +27,7 @@ export default function ArticlePage() {
   const [article, setArticle] = useState<Article | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchArticle()
-  }, [articleId])
-
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     setIsLoading(true)
     try {
       const res = await fetch(`/api/articles?id=${articleId}`)
@@ -43,7 +39,11 @@ export default function ArticlePage() {
       console.error('Error fetching article:', error)
     }
     setIsLoading(false)
-  }
+  }, [articleId])
+
+  useEffect(() => {
+    fetchArticle()
+  }, [fetchArticle])
 
   if (isLoading) {
     return (

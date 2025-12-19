@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { readFileSync, readdirSync } from 'fs'
+import { readFileSync } from 'fs'
 import { join } from 'path'
 
 interface Article {
