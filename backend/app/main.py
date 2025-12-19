@@ -1,0 +1,80 @@
+"""
+Главный файл FastAPI приложения My Fitness Trainer
+"""
+import logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.api import api_router
+from app.db.database import init_db
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Создаем экземпляр приложения
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.VERSION,
+    description="API для фитнес-приложения с трекингом тренировок, питания и прогресса",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
+
+# Настройка CORS для работы с фронтендом
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Инициализация при запуске приложения
+    """
+    print(f"🚀 Starting {settings.APP_NAME} v{settings.VERSION}")
+    # В продакшене используем Alembic вместо init_db()
+    # await init_db()
+
+
+@app.get("/")
+async def root():
+    """
+    Корневой endpoint - информация о приложении
+    """
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.VERSION,
+        "status": "running",
+        "docs": "/api/docs"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Проверка здоровья приложения
+    """
+    return {"status": "healthy"}
+
+
+# Подключаем API роутеры
+app.include_router(api_router, prefix="/api")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.DEBUG
+    )
+

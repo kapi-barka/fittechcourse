@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Темная тема по умолчанию */
+    --background: 222.2 47% 8%;
+    --foreground: 0 0% 98%;
+    --card: 222.2 47% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 222.2 47% 10%;
+    --popover-foreground: 0 0% 98%;
+    /* Красно-розовый акцент - приглушенный */
+    --primary: 340 45% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 222.2 32% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 222.2 32% 15%;
+    --muted-foreground: 215 20.2% 75%;
+    --accent: 340 40% 42%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 55% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222.2 32% 20%;
+    --input: 222.2 32% 15%;
+    --ring: 340 45% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/40 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/60;
+}
+
+/* Smooth animations */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Glass morphism effect - темная тема */
+.glass {
+  background: rgba(20, 20, 25, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes ken-burns {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-ken-burns {
+  animation: ken-burns 20s ease-out infinite alternate;
+}
+
+/* Article content styles */
+.article-content {
+  @apply text-foreground;
+}
+
+.article-content p {
+  @apply mb-4 leading-relaxed;
+}
+
+.article-content h2 {
+  @apply text-xl font-semibold mt-8 mb-4 text-foreground;
+}
+
+.article-content h3 {
+  @apply text-lg font-semibold mt-6 mb-3 text-foreground;
+}
+
+.article-content ul,
+.article-content ol {
+  @apply mb-4 ml-6;
+}
+
+.article-content ul {
+  @apply list-disc;
+}
+
+.article-content ol {
+  @apply list-decimal;
+}
+
+.article-content li {
+  @apply mb-2;
+}
+
+.article-content a {
+  @apply text-primary hover:underline;
+}
+
+.article-content img {
+  @apply rounded-lg my-6 w-full;
+}
+
+.article-content table {
+  @apply w-full border-collapse mb-6;
+}
+
+.article-content table td,
+.article-content table th {
+  @apply border border-border p-3;
+}
+
+.article-content table th {
+  @apply bg-muted font-semibold;
+}
+
+.article-content b,
+.article-content strong {
+  @apply font-semibold;
+}
+
+.article-content hr {
+  @apply my-6 border-border;
+}
+
+.article-content blockquote {
+  @apply border-l-4 border-primary pl-4 italic my-4;
+}
