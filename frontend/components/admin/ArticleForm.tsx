@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Article, uploadAPI } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -167,7 +168,7 @@ export const ArticleForm = ({
           i === index ? { ...img, copied: false } : img
         ))
       }, 2000)
-    } catch (error) {
+    } catch {
       toast.error('Не удалось скопировать URL')
     }
   }
@@ -353,17 +354,20 @@ export const ArticleForm = ({
                   key={index}
                   className="flex items-center gap-3 p-2 bg-muted rounded-md border hover:bg-muted/80 transition-colors"
                 >
-                  <img
+                  <Image
                     src={img.url}
                     alt={`Uploaded ${index + 1}`}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded border"
+                    unoptimized
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground truncate font-mono">
                       {img.url}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Используйте этот URL в теге &lt;img src="..."&gt;
+                      Используйте этот URL в теге &lt;img src=&quot;...&quot;&gt;
                     </p>
                   </div>
                   <div className="flex gap-1">
@@ -450,10 +454,13 @@ export const ArticleForm = ({
         <label className="text-sm font-medium">Обложка статьи</label>
         {formData.cover_image_url && (
           <div className="mb-2">
-            <img
+            <Image
               src={formData.cover_image_url}
               alt="Cover"
+              width={600}
+              height={200}
               className="w-full max-w-md h-48 object-cover rounded-lg border"
+              unoptimized
             />
           </div>
         )}

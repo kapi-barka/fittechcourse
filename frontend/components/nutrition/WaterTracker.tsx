@@ -37,7 +37,10 @@ export function WaterTracker() {
   }, [])
 
   const handleLogWater = async () => {
-    if (amount <= 0) return
+    if (amount < 50 || amount > 5000) {
+      toast.error('Количество воды должно быть от 50 до 5000 мл')
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -134,32 +137,38 @@ export function WaterTracker() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setAmount(Math.max(0, amount - 50))}
+              onClick={() => setAmount(Math.max(50, amount - 50))}
             >
               <Minus className="h-4 w-4" />
             </Button>
             <Input
               type="number"
               value={amount}
-              onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
-              min="0"
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 0
+                setAmount(Math.max(50, Math.min(5000, value)))
+              }}
+              min="50"
+              max="5000"
               step="50"
               className="text-center"
             />
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setAmount(amount + 50)}
+              onClick={() => setAmount(Math.min(5000, amount + 50))}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
+        <p className="text-xs text-muted-foreground text-center">От 50 до 5000 мл</p>
+
         {/* Кнопка добавления */}
         <Button
           onClick={handleLogWater}
-          disabled={isLoading || amount <= 0}
+          disabled={isLoading || amount < 50 || amount > 5000}
           className="w-full"
         >
           <Plus className="mr-2 h-4 w-4" />

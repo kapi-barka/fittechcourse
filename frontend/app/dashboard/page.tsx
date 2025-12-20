@@ -14,7 +14,6 @@ import { CaloriesChart } from '@/components/dashboard/CaloriesChart'
 import { TDEECalculator } from '@/components/analytics/TDEECalculator'
 import { GoalsModal } from '@/components/dashboard/GoalsModal'
 import {
-  Activity,
   TrendingUp,
   Flame,
   Dumbbell,
