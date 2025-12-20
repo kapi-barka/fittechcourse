@@ -17,19 +17,10 @@ import {
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
-
-interface LocalArticle {
-  id: string
-  title: string
-  excerpt?: string
-  tags?: string[]
-  cover_image_url?: string
-  created_at: string
-  views_count: number
-}
+import { articlesAPI, Article } from '@/lib/api'
 
 export default function ArticlesPage() {
-  const [articles, setArticles] = useState<LocalArticle[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -40,11 +31,8 @@ export default function ArticlesPage() {
   const fetchArticles = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch('/api/articles')
-      if (res.ok) {
-        const data = await res.json()
-        setArticles(data)
-      }
+      const res = await articlesAPI.list({ published_only: true })
+      setArticles(res.data)
     } catch (error) {
       console.error('Error fetching articles:', error)
     }

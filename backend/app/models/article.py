@@ -3,7 +3,7 @@
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, ARRAY, Boolean
+from sqlalchemy import Column, String, ForeignKey, DateTime, Integer, ARRAY, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -17,10 +17,11 @@ class Article(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     title = Column(String, nullable=False, index=True)
-    content = Column(Text, nullable=False)  # Полный текст статьи
+    html_file_name = Column(String, nullable=True)  # Имя HTML файла локально (например, "article-1.html")
+    html_file_url = Column(String, nullable=True)  # URL HTML файла на Cloudinary
     author_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     tags = Column(ARRAY(String), nullable=True)  # Теги для поиска и фильтрации
-    views_count = Column(Integer, default=0, nullable=False)
+    viewed_by = Column(ARRAY(UUID(as_uuid=True)), nullable=True, default=None)  # Массив ID пользователей, которые просмотрели статью
     cover_image_url = Column(String, nullable=True)  # Обложка статьи
     excerpt = Column(String, nullable=True)  # Краткое описание
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

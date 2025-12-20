@@ -107,6 +107,13 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
             return
         }
 
+        const weightValue = parseFloat(weight)
+        if (isNaN(weightValue) || weightValue < 1 || weightValue > 10000) {
+            setError('Вес продукта должен быть от 1 до 10000 грамм')
+            toast.error('Вес продукта должен быть от 1 до 10000 грамм')
+            return
+        }
+
         setIsLoading(true)
         setError(null)
 
@@ -171,6 +178,13 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
     const handleSubmit = async () => {
         if (!scannedProduct || !weight) {
             setError('Заполните все поля')
+            return
+        }
+
+        const weightValue = parseFloat(weight)
+        if (isNaN(weightValue) || weightValue < 1 || weightValue > 10000) {
+            setError('Вес продукта должен быть от 1 до 10000 грамм')
+            toast.error('Вес продукта должен быть от 1 до 10000 грамм')
             return
         }
 
@@ -277,6 +291,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                 </div>
 
                                 {/* Форма ввода данных */}
+                                <div>
                                 <Input
                                     label="Вес (граммы)"
                                     type="number"
@@ -284,8 +299,12 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                     value={weight}
                                     onChange={(e) => setWeight(e.target.value)}
                                     placeholder="150"
+                                        min="1"
+                                        max="10000"
                                     required
                                 />
+                                    <p className="text-xs text-muted-foreground mt-1">От 1 до 10000 грамм</p>
+                                </div>
 
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Тип приёма пищи</label>
@@ -377,6 +396,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                 </div>
 
                                 {/* Форма ввода данных */}
+                                <div>
                                 <Input
                                     label="Вес (граммы)"
                                     type="number"
@@ -384,8 +404,12 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                     value={weight}
                                     onChange={(e) => setWeight(e.target.value)}
                                     placeholder="150"
+                                        min="1"
+                                        max="10000"
                                     required
                                 />
+                                    <p className="text-xs text-muted-foreground mt-1">От 1 до 10000 грамм</p>
+                                </div>
 
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Тип приёма пищи</label>

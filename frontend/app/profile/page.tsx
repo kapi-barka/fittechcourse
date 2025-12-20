@@ -55,6 +55,25 @@ export default function ProfilePage() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    
+    // Валидация
+    if (formData.target_weight !== undefined) {
+      const weight = typeof formData.target_weight === 'number' ? formData.target_weight : parseFloat(String(formData.target_weight))
+      if (isNaN(weight) || weight < 20 || weight > 300) {
+        setError('Целевой вес должен быть от 20 до 300 кг')
+        toast.error('Целевой вес должен быть от 20 до 300 кг')
+        return
+      }
+    }
+    if (formData.target_calories !== undefined) {
+      const calories = typeof formData.target_calories === 'number' ? formData.target_calories : parseInt(String(formData.target_calories))
+      if (isNaN(calories) || calories < 800 || calories > 8000) {
+        setError('Цель по калориям должна быть от 800 до 8000 ккал/день')
+        toast.error('Цель по калориям должна быть от 800 до 8000 ккал/день')
+        return
+      }
+    }
+    
     setIsSaving(true)
 
     try {
@@ -126,6 +145,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
                     <Input
                       label="Целевой вес (кг)"
                       name="target_weight"
@@ -134,7 +154,12 @@ export default function ProfilePage() {
                       value={formData.target_weight || ''}
                       onChange={handleChange}
                       placeholder="70.5"
+                        min="20"
+                        max="300"
                     />
+                      <p className="text-xs text-muted-foreground mt-1">От 20 до 300 кг</p>
+                    </div>
+                    <div>
                     <Input
                       label="Цель по калориям (ккал/день)"
                       name="target_calories"
@@ -142,7 +167,11 @@ export default function ProfilePage() {
                       value={formData.target_calories || ''}
                       onChange={handleChange}
                       placeholder="2000"
+                        min="800"
+                        max="8000"
                     />
+                      <p className="text-xs text-muted-foreground mt-1">От 800 до 8000 ккал/день</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

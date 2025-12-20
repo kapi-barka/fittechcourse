@@ -21,17 +21,33 @@ import { cn } from '@/lib/utils'
 interface WeightChartProps {
   data: BodyMetric[]
   targetWeight?: number | null
+  targetChest?: number | null
+  targetWaist?: number | null
+  targetHips?: number | null
+  targetBiceps?: number | null
+  targetThigh?: number | null
 }
 
-type MetricType = 'weight' | 'chest' | 'waist'
+type MetricType = 'weight' | 'chest' | 'waist' | 'hips' | 'biceps' | 'thigh'
 
 const metricConfig: Record<MetricType, { label: string; color: string; unit: string }> = {
   weight: { label: 'Вес', color: '#3b82f6', unit: ' кг' },
   chest: { label: 'Грудь', color: '#8b5cf6', unit: ' см' },
   waist: { label: 'Талия', color: '#ec4899', unit: ' см' },
+  hips: { label: 'Бедра', color: '#f59e0b', unit: ' см' },
+  biceps: { label: 'Бицепс', color: '#10b981', unit: ' см' },
+  thigh: { label: 'Бедро', color: '#ef4444', unit: ' см' },
 }
 
-export function WeightChart({ data, targetWeight }: WeightChartProps) {
+export function WeightChart({ 
+  data, 
+  targetWeight,
+  targetChest,
+  targetWaist,
+  targetHips,
+  targetBiceps,
+  targetThigh
+}: WeightChartProps) {
   const [selectedMetrics, setSelectedMetrics] = useState<Set<MetricType>>(new Set<MetricType>(['weight']))
 
   const chartData = useMemo(() => {
@@ -42,6 +58,9 @@ export function WeightChart({ data, targetWeight }: WeightChartProps) {
         weight: metric.weight,
         chest: metric.chest,
         waist: metric.waist,
+        hips: metric.hips,
+        biceps: metric.biceps,
+        thigh: metric.thigh,
         fullDate: format(new Date(metric.date), 'd MMMM yyyy', { locale: ru }),
       }))
   }, [data])
@@ -164,6 +183,7 @@ export function WeightChart({ data, targetWeight }: WeightChartProps) {
                   return metricConfig[metric]?.label || value
                 }}
               />
+              {/* Целевые линии */}
               {targetWeight && selectedMetrics.has('weight') && (
                 <ReferenceLine 
                   y={targetWeight} 
@@ -172,6 +192,48 @@ export function WeightChart({ data, targetWeight }: WeightChartProps) {
                   label={{ value: 'Цель (вес)', position: 'right', fill: '#10b981', fontSize: 12 }} 
                 />
               )}
+              {targetChest && selectedMetrics.has('chest') && (
+                <ReferenceLine 
+                  y={targetChest} 
+                  stroke="#10b981" 
+                  strokeDasharray="3 3" 
+                  label={{ value: 'Цель (грудь)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                />
+              )}
+              {targetWaist && selectedMetrics.has('waist') && (
+                <ReferenceLine 
+                  y={targetWaist} 
+                  stroke="#10b981" 
+                  strokeDasharray="3 3" 
+                  label={{ value: 'Цель (талия)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                />
+              )}
+              {targetHips && selectedMetrics.has('hips') && (
+                <ReferenceLine 
+                  y={targetHips} 
+                  stroke="#10b981" 
+                  strokeDasharray="3 3" 
+                  label={{ value: 'Цель (бедра)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                />
+              )}
+              {targetBiceps && selectedMetrics.has('biceps') && (
+                <ReferenceLine 
+                  y={targetBiceps} 
+                  stroke="#10b981" 
+                  strokeDasharray="3 3" 
+                  label={{ value: 'Цель (бицепс)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                />
+              )}
+              {targetThigh && selectedMetrics.has('thigh') && (
+                <ReferenceLine 
+                  y={targetThigh} 
+                  stroke="#10b981" 
+                  strokeDasharray="3 3" 
+                  label={{ value: 'Цель (бедро)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                />
+              )}
+              
+              {/* Линии данных */}
               {selectedMetrics.has('weight') && (
                 <Line
                   type="monotone"
@@ -203,6 +265,39 @@ export function WeightChart({ data, targetWeight }: WeightChartProps) {
                   dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
                   activeDot={{ r: 6, strokeWidth: 0 }}
                   name="waist"
+                />
+              )}
+              {selectedMetrics.has('hips') && (
+                <Line
+                  type="monotone"
+                  dataKey="hips"
+                  stroke={metricConfig.hips.color}
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  name="hips"
+                />
+              )}
+              {selectedMetrics.has('biceps') && (
+                <Line
+                  type="monotone"
+                  dataKey="biceps"
+                  stroke={metricConfig.biceps.color}
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  name="biceps"
+                />
+              )}
+              {selectedMetrics.has('thigh') && (
+                <Line
+                  type="monotone"
+                  dataKey="thigh"
+                  stroke={metricConfig.thigh.color}
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  name="thigh"
                 />
               )}
             </LineChart>

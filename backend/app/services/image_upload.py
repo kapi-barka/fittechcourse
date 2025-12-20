@@ -26,3 +26,19 @@ async def upload_image(file: UploadFile, folder: str = None) -> str:
         print(f"Error uploading to Cloudinary: {e}")
         raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
 
+
+async def upload_raw_file(file: UploadFile, folder: str = None) -> str:
+    """
+    Upload a raw file (HTML, text, etc.) to Cloudinary and return the URL.
+    """
+    if not settings.CLOUDINARY_CLOUD_NAME or not settings.CLOUDINARY_API_KEY or not settings.CLOUDINARY_API_SECRET:
+        raise HTTPException(status_code=500, detail="Cloudinary is not configured")
+        
+    try:
+        # Для raw файлов используем resource_type="raw"
+        options = {"folder": folder, "resource_type": "raw"} if folder else {"resource_type": "raw"}
+        result = cloudinary.uploader.upload(file.file, **options)
+        return result.get("secure_url")
+    except Exception as e:
+        print(f"Error uploading raw file to Cloudinary: {e}")
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")

@@ -52,6 +52,9 @@ function DiaryContent() {
     weight: '',
     chest: '',
     waist: '',
+    hips: '',
+    biceps: '',
+    thigh: '',
     date: new Date().toISOString().split('T')[0]
   })
 
@@ -92,17 +95,75 @@ function DiaryContent() {
     setIsLoading(false)
   }
 
+  const validateMetric = (): string | null => {
+    if (newMetric.weight) {
+      const weight = parseFloat(newMetric.weight)
+      if (isNaN(weight) || weight < 20 || weight > 300) {
+        return 'Вес должен быть от 20 до 300 кг'
+      }
+    }
+    if (newMetric.chest) {
+      const chest = parseFloat(newMetric.chest)
+      if (isNaN(chest) || chest < 50 || chest > 200) {
+        return 'Обхват груди должен быть от 50 до 200 см'
+      }
+    }
+    if (newMetric.waist) {
+      const waist = parseFloat(newMetric.waist)
+      if (isNaN(waist) || waist < 40 || waist > 200) {
+        return 'Обхват талии должен быть от 40 до 200 см'
+      }
+    }
+    if (newMetric.hips) {
+      const hips = parseFloat(newMetric.hips)
+      if (isNaN(hips) || hips < 50 || hips > 200) {
+        return 'Обхват бедер должен быть от 50 до 200 см'
+      }
+    }
+    if (newMetric.biceps) {
+      const biceps = parseFloat(newMetric.biceps)
+      if (isNaN(biceps) || biceps < 15 || biceps > 80) {
+        return 'Обхват бицепса должен быть от 15 до 80 см'
+      }
+    }
+    if (newMetric.thigh) {
+      const thigh = parseFloat(newMetric.thigh)
+      if (isNaN(thigh) || thigh < 30 || thigh > 150) {
+        return 'Обхват бедра должен быть от 30 до 150 см'
+      }
+    }
+    return null
+  }
+
   const handleAddMetric = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    const validationError = validateMetric()
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+    
     try {
       await metricsAPI.create({
         date: newMetric.date,
         weight: newMetric.weight ? parseFloat(newMetric.weight) : undefined,
         chest: newMetric.chest ? parseFloat(newMetric.chest) : undefined,
         waist: newMetric.waist ? parseFloat(newMetric.waist) : undefined,
+        hips: newMetric.hips ? parseFloat(newMetric.hips) : undefined,
+        biceps: newMetric.biceps ? parseFloat(newMetric.biceps) : undefined,
+        thigh: newMetric.thigh ? parseFloat(newMetric.thigh) : undefined,
       })
 
-      setNewMetric({ weight: '', chest: '', waist: '', date: new Date().toISOString().split('T')[0] })
+      setNewMetric({ 
+        weight: '', 
+        chest: '', 
+        waist: '', 
+        hips: '',
+        biceps: '',
+        thigh: '',
+        date: new Date().toISOString().split('T')[0] 
+      })
       fetchMetrics()
       toast.success('Замер успешно добавлен')
     } catch (error) {
@@ -320,7 +381,7 @@ function DiaryContent() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleAddMetric} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <Input
                         label="Дата"
                         type="date"
@@ -328,6 +389,7 @@ function DiaryContent() {
                         onChange={(e) => setNewMetric({ ...newMetric, date: e.target.value })}
                         required
                       />
+                      <div>
                       <Input
                         label="Вес (кг)"
                         type="number"
@@ -335,7 +397,12 @@ function DiaryContent() {
                         placeholder="75.5"
                         value={newMetric.weight}
                         onChange={(e) => setNewMetric({ ...newMetric, weight: e.target.value })}
+                          min="20"
+                          max="300"
                       />
+                        <p className="text-xs text-muted-foreground mt-1">От 20 до 300 кг</p>
+                      </div>
+                      <div>
                       <Input
                         label="Грудь (см)"
                         type="number"
@@ -343,7 +410,12 @@ function DiaryContent() {
                         placeholder="95"
                         value={newMetric.chest}
                         onChange={(e) => setNewMetric({ ...newMetric, chest: e.target.value })}
+                          min="50"
+                          max="200"
                       />
+                        <p className="text-xs text-muted-foreground mt-1">От 50 до 200 см</p>
+                      </div>
+                      <div>
                       <Input
                         label="Талия (см)"
                         type="number"
@@ -351,7 +423,50 @@ function DiaryContent() {
                         placeholder="80"
                         value={newMetric.waist}
                         onChange={(e) => setNewMetric({ ...newMetric, waist: e.target.value })}
-                      />
+                          min="40"
+                          max="200"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">От 40 до 200 см</p>
+                      </div>
+                      <div>
+                        <Input
+                          label="Бедра (см)"
+                          type="number"
+                          step="0.1"
+                          placeholder="100"
+                          value={newMetric.hips}
+                          onChange={(e) => setNewMetric({ ...newMetric, hips: e.target.value })}
+                          min="50"
+                          max="200"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">От 50 до 200 см</p>
+                      </div>
+                      <div>
+                        <Input
+                          label="Бицепс (см)"
+                          type="number"
+                          step="0.1"
+                          placeholder="35"
+                          value={newMetric.biceps}
+                          onChange={(e) => setNewMetric({ ...newMetric, biceps: e.target.value })}
+                          min="15"
+                          max="80"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">От 15 до 80 см</p>
+                      </div>
+                      <div>
+                        <Input
+                          label="Бедро (см)"
+                          type="number"
+                          step="0.1"
+                          placeholder="60"
+                          value={newMetric.thigh}
+                          onChange={(e) => setNewMetric({ ...newMetric, thigh: e.target.value })}
+                          min="30"
+                          max="150"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">От 30 до 150 см</p>
+                      </div>
                     </div>
                     <Button type="submit">
                       <Plus className="mr-2 h-4 w-4" />
@@ -379,7 +494,7 @@ function DiaryContent() {
                         <div key={metric.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                           <div>
                             <p className="font-medium">{formatDate(metric.date)}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
+                            <div className="flex items-center flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
                               {metric.weight && (
                                 <span className="flex items-center">
                                   <Scale className="h-4 w-4 mr-1" />
@@ -388,6 +503,9 @@ function DiaryContent() {
                               )}
                               {metric.chest && <span>Грудь: {metric.chest} см</span>}
                               {metric.waist && <span>Талия: {metric.waist} см</span>}
+                              {metric.hips && <span>Бедра: {metric.hips} см</span>}
+                              {metric.biceps && <span>Бицепс: {metric.biceps} см</span>}
+                              {metric.thigh && <span>Бедро: {metric.thigh} см</span>}
                             </div>
                           </div>
                           <ChevronRight className="h-5 w-5 text-muted-foreground" />

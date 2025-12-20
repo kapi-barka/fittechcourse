@@ -10,12 +10,12 @@ from uuid import UUID
 class BodyMetricCreate(BaseModel):
     """Схема создания замера"""
     date: date_type = Field(default_factory=date_type.today)
-    weight: Optional[float] = Field(None, gt=0, lt=500, description="Вес в кг")
-    chest: Optional[float] = Field(None, gt=0, lt=300, description="Обхват груди в см")
-    waist: Optional[float] = Field(None, gt=0, lt=300, description="Обхват талии в см")
-    hips: Optional[float] = Field(None, gt=0, lt=300, description="Обхват бедер в см")
-    biceps: Optional[float] = Field(None, gt=0, lt=100, description="Обхват бицепса в см")
-    thigh: Optional[float] = Field(None, gt=0, lt=200, description="Обхват бедра в см")
+    weight: Optional[float] = Field(None, ge=20, le=300, description="Вес в кг (от 20 до 300)")
+    chest: Optional[float] = Field(None, ge=50, le=200, description="Обхват груди в см (от 50 до 200)")
+    waist: Optional[float] = Field(None, ge=40, le=200, description="Обхват талии в см (от 40 до 200)")
+    hips: Optional[float] = Field(None, ge=50, le=200, description="Обхват бедер в см (от 50 до 200)")
+    biceps: Optional[float] = Field(None, ge=15, le=80, description="Обхват бицепса в см (от 15 до 80)")
+    thigh: Optional[float] = Field(None, ge=30, le=150, description="Обхват бедра в см (от 30 до 150)")
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 

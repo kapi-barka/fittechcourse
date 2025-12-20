@@ -9,17 +9,7 @@ import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent } from '@/components/ui/Card'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-
-interface Article {
-  id: string
-  title: string
-  excerpt?: string
-  content: string
-  tags?: string[]
-  cover_image_url?: string
-  created_at: string
-  views_count: number
-}
+import { articlesAPI, Article } from '@/lib/api'
 
 export default function ArticlePage() {
   const params = useParams()
@@ -30,11 +20,8 @@ export default function ArticlePage() {
   const fetchArticle = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`/api/articles?id=${articleId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setArticle(data)
-      }
+      const res = await articlesAPI.get(articleId)
+      setArticle(res.data)
     } catch (error) {
       console.error('Error fetching article:', error)
     }
@@ -103,10 +90,12 @@ export default function ArticlePage() {
                   </p>
                 )}
 
-                <div
-                  className="article-content"
-                  dangerouslySetInnerHTML={{ __html: article.content }}
-                />
+                {article.content && (
+                  <div
+                    className="article-content"
+                    dangerouslySetInnerHTML={{ __html: article.content }}
+                  />
+                )}
               </article>
             </CardContent>
           </Card>

@@ -77,6 +77,12 @@ class UserProfile(Base):
     target_proteins = Column(Float, nullable=True)  # Целевые белки в день (г)
     target_fats = Column(Float, nullable=True)  # Целевые жиры в день (г)
     target_carbs = Column(Float, nullable=True)  # Целевые углеводы в день (г)
+    # Целевые замеры тела
+    target_chest = Column(Float, nullable=True)  # Целевой обхват груди в см
+    target_waist = Column(Float, nullable=True)  # Целевой обхват талии в см
+    target_hips = Column(Float, nullable=True)  # Целевой обхват бедер в см
+    target_biceps = Column(Float, nullable=True)  # Целевой обхват бицепса в см
+    target_thigh = Column(Float, nullable=True)  # Целевой обхват бедра в см
     activity_level = Column(Enum(ActivityLevel), default=ActivityLevel.SEDENTARY, nullable=True)
     
     # Active Program

@@ -41,9 +41,16 @@ api.interceptors.response.use(
     // Если токен истек или невалиден (401), перенаправляем на логин
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
+        // Не перенаправляем, если ошибка произошла при попытке входа
+        // (чтобы пользователь мог увидеть сообщение об ошибке)
+        const requestUrl = error.config?.url || ''
+        const isLoginRequest = requestUrl.includes('/auth/login')
+        
+        if (!isLoginRequest) {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(error)
@@ -73,6 +80,11 @@ export interface UserProfile {
   target_proteins?: number
   target_fats?: number
   target_carbs?: number
+  target_chest?: number
+  target_waist?: number
+  target_hips?: number
+  target_biceps?: number
+  target_thigh?: number
   activity_level?: string
   current_program_id?: string
   avatar_url?: string
@@ -180,7 +192,9 @@ export interface NutritionLog {
 export interface Article {
   id: string
   title: string
-  content: string
+  content?: string | null
+  html_file_name?: string | null
+  html_file_url?: string | null
   author_id?: string
   tags?: string[]
   views_count: number

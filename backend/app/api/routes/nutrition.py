@@ -23,7 +23,7 @@ from app.schemas.nutrition import (
     BarcodeLookupRequest,
     BarcodeLogCreate
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.services.openfoodfacts import get_product_by_barcode
 from app.services.product_recognition import recognize_product
 from app.core.config import settings
@@ -636,7 +636,7 @@ async def get_daily_summary(
 # ============ Гидратация ============
 
 class HydrationLogRequest(BaseModel):
-    amount_ml: float
+    amount_ml: float = Field(..., ge=50, le=5000, description="Количество воды в мл (от 50 до 5000)")
 
 
 @router.post("/hydration/log")
