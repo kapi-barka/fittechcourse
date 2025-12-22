@@ -13,12 +13,12 @@ import logging
 from app.db.database import get_db
 from app.core.dependencies import get_current_active_user, require_admin
 from app.models.nutrition import FoodProduct, NutritionLog
-from app.models.user import User, UserProfile, UserRole
+from app.models.user import User, UserProfile
 from app.schemas.nutrition import (
     FoodProductCreate,
-    FoodProductUpdate,
     FoodProductResponse,
     NutritionLogCreate,
+    NutritionLogUpdate,
     NutritionLogResponse,
     DailyNutritionSummary,
     BarcodeLookupRequest,
@@ -380,113 +380,6 @@ async def create_product_from_recognition(
     return product
 
 
-@router.put("/products/{product_id}", response_model=FoodProductResponse)
-async def update_product(
-    product_id: UUID,
-    product_data: FoodProductUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """
-    Изменить продукт (только свои продукты или админы)
-    """
-    result = await db.execute(
-        select(FoodProduct).where(FoodProduct.id == product_id)
-    )
-    product = result.scalar_one_or_none()
-    
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Продукт не найден"
-        )
-    
-    # Проверяем права: пользователь может изменять только свои продукты
-    # (где user_id совпадает с текущим пользователем)
-    # Админы могут изменять любые продукты
-    is_admin = current_user.role == UserRole.ADMIN
-    
-    if not is_admin and product.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Вы можете изменять только свои продукты"
-        )
-    
-    # Обновляем только переданные поля
-    update_data = product_data.model_dump(exclude_unset=True)
-    
-    # Если меняется название, проверяем уникальность
-    if 'name' in update_data and update_data['name'] != product.name:
-        name_check = await db.execute(
-            select(FoodProduct).where(
-                FoodProduct.name == update_data['name'],
-                FoodProduct.id != product_id
-            )
-        )
-        existing = name_check.scalar_one_or_none()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Продукт с таким названием уже существует"
-            )
-    
-    for field, value in update_data.items():
-        setattr(product, field, value)
-    
-    await db.commit()
-    await db.refresh(product)
-    
-    return product
-
-
-@router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(
-    product_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """
-    Удалить продукт (только свои продукты или админы)
-    """
-    result = await db.execute(
-        select(FoodProduct).where(FoodProduct.id == product_id)
-    )
-    product = result.scalar_one_or_none()
-    
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Продукт не найден"
-        )
-    
-    # Проверяем права: пользователь может удалять только свои продукты
-    # Админы могут удалять любые продукты
-    is_admin = current_user.role == UserRole.ADMIN
-    
-    if not is_admin and product.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Вы можете удалять только свои продукты"
-        )
-    
-    # Проверяем, нет ли записей в дневнике питания с этим продуктом
-    logs_check = await db.execute(
-        select(NutritionLog).where(NutritionLog.product_id == product_id).limit(1)
-    )
-    has_logs = logs_check.scalar_one_or_none() is not None
-    
-    if has_logs and not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Нельзя удалить продукт, который используется в записях дневника питания"
-        )
-    
-    await db.delete(product)
-    await db.commit()
-    
-    return None
-
-
 @router.post("/logs/from-barcode", response_model=NutritionLogResponse, status_code=status.HTTP_201_CREATED)
 async def create_log_from_barcode(
     log_data: BarcodeLogCreate,
@@ -657,6 +550,82 @@ async def create_nutrition_log(
         "fats": round(product.fats * multiplier, 2),
         "carbs": round(product.carbs * multiplier, 2),
         "product_name": product.name,  # Добавляем название продукта
+    }
+    
+    return log_dict
+
+
+@router.put("/logs/{log_id}", response_model=NutritionLogResponse)
+async def update_nutrition_log(
+    log_id: UUID,
+    log_data: NutritionLogUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Изменить запись о питании
+    """
+    result = await db.execute(
+        select(NutritionLog)
+        .where(NutritionLog.id == log_id, NutritionLog.user_id == current_user.id)
+    )
+    log = result.scalar_one_or_none()
+    
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Запись не найдена"
+        )
+    
+    # Обновляем только переданные поля
+    update_data = log_data.model_dump(exclude_unset=True)
+    
+    # Если меняется продукт, проверяем его существование
+    if 'product_id' in update_data:
+        product_result = await db.execute(
+            select(FoodProduct).where(FoodProduct.id == update_data['product_id'])
+        )
+        product = product_result.scalar_one_or_none()
+        
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Продукт не найден"
+            )
+    
+    for field, value in update_data.items():
+        setattr(log, field, value)
+    
+    await db.commit()
+    await db.refresh(log)
+    
+    # Загружаем продукт для расчета калорий и БЖУ
+    product_result = await db.execute(
+        select(FoodProduct).where(FoodProduct.id == log.product_id)
+    )
+    product = product_result.scalar_one_or_none()
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка при загрузке продукта"
+        )
+    
+    # Возвращаем с рассчитанными значениями
+    multiplier = log.weight_g / 100.0
+    log_dict = {
+        "id": log.id,
+        "user_id": log.user_id,
+        "product_id": log.product_id,
+        "weight_g": log.weight_g,
+        "eaten_at": log.eaten_at,
+        "meal_type": log.meal_type,
+        "notes": log.notes,
+        "calories": round(product.calories * multiplier, 2),
+        "proteins": round(product.proteins * multiplier, 2),
+        "fats": round(product.fats * multiplier, 2),
+        "carbs": round(product.carbs * multiplier, 2),
+        "product_name": product.name,
     }
     
     return log_dict

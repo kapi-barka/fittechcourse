@@ -20,17 +20,6 @@ class FoodProductCreate(BaseModel):
     source: Optional[str] = None  # 'openfoodfacts', 'manual', 'user_added'
 
 
-class FoodProductUpdate(BaseModel):
-    """Схема обновления продукта"""
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    calories: Optional[float] = Field(None, ge=0, description="Калории на 100г")
-    proteins: Optional[float] = Field(None, ge=0, description="Белки (г) на 100г")
-    fats: Optional[float] = Field(None, ge=0, description="Жиры (г) на 100г")
-    carbs: Optional[float] = Field(None, ge=0, description="Углеводы (г) на 100г")
-    brand: Optional[str] = None
-    category: Optional[str] = None
-
-
 class FoodProductResponse(BaseModel):
     """Схема ответа с продуктом"""
     id: UUID
@@ -52,6 +41,15 @@ class NutritionLogCreate(BaseModel):
     product_id: UUID
     weight_g: float = Field(..., ge=1, le=10000, description="Вес порции в граммах (от 1 до 10000)")
     eaten_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    meal_type: Optional[str] = Field(None, pattern="^(breakfast|lunch|dinner|snack)$")
+    notes: Optional[str] = None
+
+
+class NutritionLogUpdate(BaseModel):
+    """Схема обновления записи о питании"""
+    product_id: Optional[UUID] = None
+    weight_g: Optional[float] = Field(None, ge=1, le=10000, description="Вес порции в граммах (от 1 до 10000)")
+    eaten_at: Optional[datetime] = None
     meal_type: Optional[str] = Field(None, pattern="^(breakfast|lunch|dinner|snack)$")
     notes: Optional[str] = None
 
