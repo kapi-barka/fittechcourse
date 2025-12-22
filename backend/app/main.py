@@ -27,12 +27,25 @@ app = FastAPI(
 
 # Настройка CORS для работы с фронтендом
 # Убеждаемся, что CORS_ORIGINS - это список
+logger = logging.getLogger(__name__)
+
 cors_origins = settings.CORS_ORIGINS
 if not isinstance(cors_origins, list):
     cors_origins = [cors_origins] if cors_origins else []
 
-logger = logging.getLogger(__name__)
-logger.info(f"Configuring CORS with origins: {cors_origins}")
+# Логируем для отладки
+logger.info(f"🔍 CORS Configuration:")
+logger.info(f"   - CORS_ORIGINS from settings: {settings.CORS_ORIGINS}")
+logger.info(f"   - CORS_ORIGINS type: {type(settings.CORS_ORIGINS)}")
+logger.info(f"   - Parsed cors_origins: {cors_origins}")
+logger.info(f"   - Environment: {settings.ENVIRONMENT}")
+
+# Если origins пустой список, добавляем фронтенд URL из ошибки пользователя
+if not cors_origins:
+    logger.warning("⚠️  CORS_ORIGINS is empty!")
+    # Добавляем известный фронтенд URL
+    cors_origins = ["https://fittech-psi.vercel.app"]
+    logger.info(f"   - Using fallback origin: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,7 +53,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+logger.info(f"✅ CORS middleware configured with origins: {cors_origins}")
 
 
 @app.on_event("startup")
