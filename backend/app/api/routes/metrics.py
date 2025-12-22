@@ -12,7 +12,7 @@ from app.db.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.metrics import BodyMetric
 from app.models.user import User
-from app.schemas.metrics import BodyMetricCreate, BodyMetricResponse
+from app.schemas.metrics import BodyMetricCreate, BodyMetricUpdate, BodyMetricResponse
 
 router = APIRouter()
 
@@ -85,6 +85,39 @@ async def create_metric(
     )
     
     db.add(metric)
+    await db.commit()
+    await db.refresh(metric)
+    
+    return metric
+
+
+@router.put("/{metric_id}", response_model=BodyMetricResponse)
+async def update_metric(
+    metric_id: UUID,
+    metric_data: BodyMetricUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Изменить замер (дату менять нельзя)
+    """
+    result = await db.execute(
+        select(BodyMetric)
+        .where(BodyMetric.id == metric_id, BodyMetric.user_id == current_user.id)
+    )
+    metric = result.scalar_one_or_none()
+    
+    if not metric:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Замер не найден"
+        )
+    
+    # Обновляем только переданные поля
+    update_data = metric_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(metric, field, value)
+    
     await db.commit()
     await db.refresh(metric)
     
