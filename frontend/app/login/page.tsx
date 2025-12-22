@@ -75,10 +75,10 @@ export default function LoginPage() {
         <Card className="border-0 shadow-2xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-extrabold text-center">
-              Вход в систему
+              Вход
             </CardTitle>
             <CardDescription className="text-center font-medium">
-              Введите свои учетные данные для входа
+              Введите свои учетные данные
             </CardDescription>
           </CardHeader>
           <CardContent>

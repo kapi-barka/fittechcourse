@@ -126,6 +126,17 @@ export default function ProgramsPage() {
       <div className="min-h-screen">
 
         <main className="container mx-auto px-4 py-8">
+          {/* Заголовок с кнопкой создания */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Программы тренировок</h1>
+            <Link href="/programs/create">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Создать программу
+              </Button>
+            </Link>
+          </div>
+
           {/* Фильтры сверху */}
           <Card className="border-0 shadow-sm mb-8 bg-background">
             <CardContent className="p-4">
