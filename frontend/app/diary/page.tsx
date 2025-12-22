@@ -380,7 +380,7 @@ function DiaryContent() {
                               {/* Список продуктов в этом приеме пищи */}
                               <div className="space-y-2">
                                 {logs.map((log) => (
-                                  <div key={log.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                                  <div key={log.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group">
                                     <div className="flex-1">
                                       <p className="font-medium">{log.product_name || `Продукт #${log.product_id.slice(0, 8)}`}</p>
                                       <p className="text-sm text-muted-foreground">
@@ -394,20 +394,22 @@ function DiaryContent() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Button
-                                        variant="ghost"
-                                        size="icon"
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => setEditingLog(log)}
-                                        className="h-8 w-8"
+                                        className="h-8 px-2"
+                                        title="Редактировать"
                                       >
                                         <Edit className="h-4 w-4" />
                                       </Button>
                                       <Button
-                                        variant="ghost"
-                                        size="icon"
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => handleDeleteLog(log.id)}
-                                        className="h-8 w-8"
+                                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        title="Удалить"
                                       >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </div>
@@ -546,7 +548,7 @@ function DiaryContent() {
                   ) : (
                     <div className="space-y-3">
                       {metrics.map((metric) => (
-                        <div key={metric.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                        <div key={metric.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group">
                           <div className="flex-1">
                             <p className="font-medium">{formatDate(metric.date)}</p>
                             <div className="flex items-center flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
@@ -565,20 +567,22 @@ function DiaryContent() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
-                              variant="ghost"
-                              size="icon"
+                              variant="outline"
+                              size="sm"
                               onClick={() => setEditingMetric(metric)}
-                              className="h-8 w-8"
+                              className="h-8 px-2"
+                              title="Редактировать"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="icon"
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleDeleteMetric(metric.id)}
-                              className="h-8 w-8"
+                              className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              title="Удалить"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
