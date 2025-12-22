@@ -300,6 +300,8 @@ export const metricsAPI = {
 
   create: (data: Partial<BodyMetric>) => api.post<BodyMetric>('/metrics/', data),
 
+  update: (id: string, data: Partial<BodyMetric>) => api.put<BodyMetric>(`/metrics/${id}`, data),
+
   delete: (id: string) => api.delete(`/metrics/${id}`),
 }
 
@@ -360,6 +362,8 @@ export const nutritionAPI = {
     api.get<NutritionLog[]>('/nutrition/logs', { params }),
 
   createLog: (data: Partial<NutritionLog>) => api.post<NutritionLog>('/nutrition/logs', data),
+
+  updateLog: (id: string, data: Partial<NutritionLog>) => api.put<NutritionLog>(`/nutrition/logs/${id}`, data),
 
   deleteLog: (id: string) => api.delete(`/nutrition/logs/${id}`),
 

@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AddMealModal } from '@/components/AddMealModal'
+import { EditMetricModal } from '@/components/EditMetricModal'
+import { EditLogModal } from '@/components/EditLogModal'
 import { WaterTracker } from '@/components/nutrition/WaterTracker'
 import { metricsAPI, nutritionAPI, BodyMetric, NutritionLog } from '@/lib/api'
 import {
@@ -24,7 +26,9 @@ import {
   UtensilsCrossed,
   Moon,
   Coffee,
-  Droplet
+  Droplet,
+  Edit,
+  Pencil
 } from 'lucide-react'
 import { formatDate, round } from '@/lib/utils'
 import { toast } from 'react-toastify'
@@ -46,6 +50,8 @@ function DiaryContent() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false)
+  const [editingMetric, setEditingMetric] = useState<BodyMetric | null>(null)
+  const [editingLog, setEditingLog] = useState<NutritionLog | null>(null)
 
   // Форма добавления замера
   const [newMetric, setNewMetric] = useState({
@@ -173,6 +179,8 @@ function DiaryContent() {
   }
 
   const handleDeleteLog = async (id: string) => {
+    if (!confirm('Вы уверены, что хотите удалить эту запись?')) return
+    
     try {
       await nutritionAPI.deleteLog(id)
       fetchNutrition()
@@ -180,6 +188,43 @@ function DiaryContent() {
     } catch (error) {
       console.error('Error deleting log:', error)
       toast.error('Ошибка при удалении записи')
+    }
+  }
+
+  const handleUpdateLog = async (logId: string, data: Partial<NutritionLog>) => {
+    try {
+      await nutritionAPI.updateLog(logId, data)
+      fetchNutrition()
+      setEditingLog(null)
+      toast.success('Запись обновлена')
+    } catch (error) {
+      console.error('Error updating log:', error)
+      toast.error('Ошибка при обновлении записи')
+    }
+  }
+
+  const handleDeleteMetric = async (id: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этот замер?')) return
+    
+    try {
+      await metricsAPI.delete(id)
+      fetchMetrics()
+      toast.success('Замер удален')
+    } catch (error) {
+      console.error('Error deleting metric:', error)
+      toast.error('Ошибка при удалении замера')
+    }
+  }
+
+  const handleUpdateMetric = async (metricId: string, data: Partial<BodyMetric>) => {
+    try {
+      await metricsAPI.update(metricId, data)
+      fetchMetrics()
+      setEditingMetric(null)
+      toast.success('Замер обновлен')
+    } catch (error) {
+      console.error('Error updating metric:', error)
+      toast.error('Ошибка при обновлении замера')
     }
   }
 
@@ -347,14 +392,24 @@ function DiaryContent() {
                                         )}
                                       </p>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDeleteLog(log.id)}
-                                      className="ml-2"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setEditingLog(log)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDeleteLog(log.id)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -492,7 +547,7 @@ function DiaryContent() {
                     <div className="space-y-3">
                       {metrics.map((metric) => (
                         <div key={metric.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium">{formatDate(metric.date)}</p>
                             <div className="flex items-center flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
                               {metric.weight && (
@@ -508,7 +563,24 @@ function DiaryContent() {
                               {metric.thigh && <span>Бедро: {metric.thigh} см</span>}
                             </div>
                           </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingMetric(metric)}
+                              className="h-8 w-8"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteMetric(metric.id)}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -523,6 +595,26 @@ function DiaryContent() {
         <AddMealModal
           isOpen={isAddMealModalOpen}
           onClose={() => setIsAddMealModalOpen(false)}
+          onSuccess={() => {
+            fetchNutrition()
+          }}
+        />
+
+        {/* Модальное окно редактирования замера */}
+        <EditMetricModal
+          isOpen={editingMetric !== null}
+          onClose={() => setEditingMetric(null)}
+          metric={editingMetric}
+          onSuccess={() => {
+            fetchMetrics()
+          }}
+        />
+
+        {/* Модальное окно редактирования записи питания */}
+        <EditLogModal
+          isOpen={editingLog !== null}
+          onClose={() => setEditingLog(null)}
+          log={editingLog}
           onSuccess={() => {
             fetchNutrition()
           }}
