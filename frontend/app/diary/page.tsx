@@ -21,14 +21,12 @@ import {
   Trash2,
   Scale,
   Flame,
-  ChevronRight,
   Sun,
   UtensilsCrossed,
   Moon,
   Coffee,
   Droplet,
-  Edit,
-  Pencil
+  Edit
 } from 'lucide-react'
 import { formatDate, round } from '@/lib/utils'
 import { toast } from 'react-toastify'
@@ -191,18 +189,6 @@ function DiaryContent() {
     }
   }
 
-  const handleUpdateLog = async (logId: string, data: Partial<NutritionLog>) => {
-    try {
-      await nutritionAPI.updateLog(logId, data)
-      fetchNutrition()
-      setEditingLog(null)
-      toast.success('Запись обновлена')
-    } catch (error) {
-      console.error('Error updating log:', error)
-      toast.error('Ошибка при обновлении записи')
-    }
-  }
-
   const handleDeleteMetric = async (id: string) => {
     if (!confirm('Вы уверены, что хотите удалить этот замер?')) return
     
@@ -213,18 +199,6 @@ function DiaryContent() {
     } catch (error) {
       console.error('Error deleting metric:', error)
       toast.error('Ошибка при удалении замера')
-    }
-  }
-
-  const handleUpdateMetric = async (metricId: string, data: Partial<BodyMetric>) => {
-    try {
-      await metricsAPI.update(metricId, data)
-      fetchMetrics()
-      setEditingMetric(null)
-      toast.success('Замер обновлен')
-    } catch (error) {
-      console.error('Error updating metric:', error)
-      toast.error('Ошибка при обновлении замера')
     }
   }
 
