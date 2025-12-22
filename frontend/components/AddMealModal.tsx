@@ -27,7 +27,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
     const [scannedProduct, setScannedProduct] = useState<FoodProduct | null>(null)
     const [weight, setWeight] = useState('')
     const [mealType, setMealType] = useState<MealType>('lunch')
-    const [notes, setNotes] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -157,8 +156,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
             await nutritionAPI.createLog({
                 product_id: productId,
                 weight_g: parseFloat(weight),
-                meal_type: mealType,
-                notes: notes || undefined
+                meal_type: mealType
             })
 
             // Успех - закрываем модалку и обновляем список
@@ -195,8 +193,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
             await nutritionAPI.createLogFromBarcode({
                 barcode: scannedProduct.barcode!,
                 weight_g: parseFloat(weight),
-                meal_type: mealType,
-                notes: notes || undefined
+                meal_type: mealType
             })
 
             // Успех - закрываем модалку и обновляем список
@@ -217,7 +214,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
         setScannedProduct(null)
         setWeight('')
         setMealType('lunch')
-        setNotes('')
         setError(null)
         onClose()
     }
@@ -320,13 +316,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                     </select>
                                 </div>
 
-                                <Input
-                                    label="Заметки (опционально)"
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Например: без соли"
-                                />
-
                                 {error && (
                                     <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-sm">
                                         {error}
@@ -424,13 +413,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                                         <option value="snack">Перекус</option>
                                     </select>
                                 </div>
-
-                                <Input
-                                    label="Заметки (опционально)"
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Например: без соли"
-                                />
 
                                 {error && (
                                     <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-sm">

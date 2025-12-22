@@ -24,7 +24,6 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
   const [formData, setFormData] = useState({
     weight_g: '',
     meal_type: 'lunch' as MealType,
-    notes: '',
   })
   const [products, setProducts] = useState<FoodProduct[]>([])
   const [selectedProductId, setSelectedProductId] = useState<string>('')
@@ -37,7 +36,6 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
       setFormData({
         weight_g: log.weight_g?.toString() || '',
         meal_type: (log.meal_type as MealType) || 'lunch',
-        notes: log.notes || '',
       })
       setSelectedProductId(log.product_id)
     }
@@ -86,7 +84,6 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
         product_id: selectedProductId,
         weight_g: parseFloat(formData.weight_g),
         meal_type: formData.meal_type,
-        notes: formData.notes || undefined,
       }
 
       await nutritionAPI.updateLog(log.id, updateData)
@@ -199,17 +196,6 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
               <option value="dinner">Ужин</option>
               <option value="snack">Перекус</option>
             </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Заметки (необязательно)</label>
-            <Input
-              type="text"
-              name="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Добавьте заметку..."
-            />
           </div>
 
           <div className="flex gap-2 pt-4">
