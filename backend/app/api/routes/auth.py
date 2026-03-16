@@ -6,11 +6,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+import httpx
 
 from app.db.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token
+from app.core.config import settings
 from app.models.user import User, UserProfile, UserRole
-from app.schemas.user import UserCreate, UserLogin, Token, UserResponse, UserWithProfile
+from app.schemas.user import UserCreate, UserLogin, Token, UserResponse, UserWithProfile, GoogleAuthRequest
 
 router = APIRouter()
 
@@ -104,6 +106,100 @@ async def login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer"
+    }
+
+
+@router.post("/google", response_model=Token)
+async def google_auth(
+    data: GoogleAuthRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Вход/регистрация через Google OAuth.
+    Принимает id_token из Google Identity Services,
+    верифицирует его и возвращает JWT токены приложения.
+    """
+    # Верифицируем id_token через Google API
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": data.credential},
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Недействительный Google токен",
+        )
+
+    google_data = resp.json()
+
+    # Проверяем, что токен выдан для нашего приложения
+    if settings.GOOGLE_CLIENT_ID and google_data.get("aud") != settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Токен выдан для другого приложения",
+        )
+
+    google_id = google_data.get("sub")
+    email = google_data.get("email")
+    full_name = google_data.get("name")
+    avatar_url = google_data.get("picture")
+
+    if not google_id or not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google не вернул email или идентификатор пользователя",
+        )
+
+    # Ищем пользователя по google_id
+    result = await db.execute(select(User).options(selectinload(User.profile)).where(User.google_id == google_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        # Проверяем, нет ли аккаунта с таким email (обычная регистрация)
+        result = await db.execute(select(User).options(selectinload(User.profile)).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if user is not None:
+            # Привязываем Google к существующему аккаунту
+            user.google_id = google_id
+            if user.profile and avatar_url and not user.profile.avatar_url:
+                user.profile.avatar_url = avatar_url
+        else:
+            # Создаём нового пользователя
+            user = User(
+                email=email,
+                password_hash=None,
+                google_id=google_id,
+                role=UserRole.USER,
+            )
+            db.add(user)
+            await db.flush()
+
+            profile = UserProfile(
+                user_id=user.id,
+                full_name=full_name,
+                avatar_url=avatar_url,
+            )
+            db.add(profile)
+
+    await db.commit()
+    await db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Пользователь заблокирован",
+        )
+
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
     }
 
 

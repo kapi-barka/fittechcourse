@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 const montserrat = Montserrat({ 
   subsets: ['latin', 'cyrillic'],
@@ -46,27 +47,31 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+
   return (
     <html lang="ru">
       <body className={montserrat.className}>
-        <ServiceWorkerRegistration />
-        <GlobalBackground />
-        <Navbar />
-        <div className="relative z-10 min-h-screen w-full">
-          {children}
-        </div>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
+        <GoogleOAuthProvider clientId={googleClientId}>
+          <ServiceWorkerRegistration />
+          <GlobalBackground />
+          <Navbar />
+          <div className="relative z-10 min-h-screen w-full">
+            {children}
+          </div>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
+        </GoogleOAuthProvider>
       </body>
     </html>
   )

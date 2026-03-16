@@ -249,6 +249,9 @@ export const authAPI = {
 
   login: (email: string, password: string) =>
     api.post<Token>('/auth/login/json', { email, password }),
+
+  googleLogin: (credential: string) =>
+    api.post<Token>('/auth/google', { credential }),
 }
 
 // Пользователи

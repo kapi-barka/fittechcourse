@@ -16,6 +16,11 @@ class UserLogin(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    """Схема для входа/регистрации через Google"""
+    credential: str  # Google id_token
+
+
 class UserCreate(BaseModel):
     """Схема для регистрации пользователя"""
     email: EmailStr

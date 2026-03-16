@@ -4,6 +4,17 @@
 import { create } from 'zustand'
 import { authAPI, usersAPI, User } from '@/lib/api'
 
+async function saveTokensAndFetchUser(
+  access_token: string,
+  refresh_token: string,
+  set: (state: Partial<AuthState>) => void
+) {
+  localStorage.setItem('access_token', access_token)
+  localStorage.setItem('refresh_token', refresh_token)
+  const userResponse = await usersAPI.getMe()
+  set({ user: userResponse.data, isAuthenticated: true, isLoading: false })
+}
+
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
@@ -11,6 +22,7 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<void>
+  googleLogin: (credential: string) => Promise<void>
   register: (email: string, password: string, fullName?: string) => Promise<void>
   logout: () => void
   fetchUser: () => Promise<void>
@@ -27,20 +39,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authAPI.login(email, password)
       const { access_token, refresh_token } = response.data
-
-      // Сохраняем токены в localStorage
-      localStorage.setItem('access_token', access_token)
-      localStorage.setItem('refresh_token', refresh_token)
-
-      // Загружаем данные пользователя
-      const userResponse = await usersAPI.getMe()
-      set({
-        user: userResponse.data,
-        isAuthenticated: true,
-        isLoading: false
-      })
+      await saveTokensAndFetchUser(access_token, refresh_token, set)
     } catch (error) {
       console.error('Login error:', error)
+      throw error
+    }
+  },
+
+  googleLogin: async (credential: string) => {
+    try {
+      const response = await authAPI.googleLogin(credential)
+      const { access_token, refresh_token } = response.data
+      await saveTokensAndFetchUser(access_token, refresh_token, set)
+    } catch (error) {
+      console.error('Google login error:', error)
       throw error
     }
   },

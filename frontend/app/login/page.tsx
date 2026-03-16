@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Mail, Lock } from 'lucide-react'
 import { toast } from 'react-toastify'
+import { GoogleLogin } from '@react-oauth/google'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuthStore()
+  const { login, googleLogin } = useAuthStore()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -126,6 +127,34 @@ export default function LoginPage() {
                 Войти
               </Button>
             </form>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-muted" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">или</span>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={async (response) => {
+                  if (!response.credential) return
+                  try {
+                    await googleLogin(response.credential)
+                    toast.success('Добро пожаловать!')
+                    router.replace('/dashboard')
+                  } catch {
+                    toast.error('Ошибка входа через Google')
+                  }
+                }}
+                onError={() => toast.error('Ошибка входа через Google')}
+                shape="rectangular"
+                size="large"
+                width="100%"
+              />
+            </div>
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Нет аккаунта? </span>

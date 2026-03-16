@@ -103,6 +103,9 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = "679396674386546"
     CLOUDINARY_API_SECRET: str = "YD8h8rhsnzZDCrlYHD1HgLzSQ5U"
     
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+
     # AI Recognition Services
     OPENAI_API_KEY: Optional[str] = None
     GOOGLE_VISION_API_KEY: Optional[str] = None
