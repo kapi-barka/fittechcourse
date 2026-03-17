@@ -2,8 +2,9 @@
 Главный файл FastAPI приложения My Fitness Trainer
 """
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from app.core.config import settings
 from app.api import api_router
@@ -57,6 +58,23 @@ app.add_middleware(
 )
 
 logger.info(f"✅ CORS middleware configured with origins: {cors_origins}")
+
+
+# Глобальный обработчик необработанных исключений.
+# Гарантирует, что CORS заголовки присутствуют ВСЕГДА — даже при краше роута.
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}", exc_info=True)
+    origin = request.headers.get("origin", "")
+    cors_header = origin if origin in cors_origins else (cors_origins[0] if cors_origins else "*")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers={
+            "Access-Control-Allow-Origin": cors_header,
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
 
 
 @app.on_event("startup")

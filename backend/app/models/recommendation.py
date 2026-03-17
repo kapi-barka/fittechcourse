@@ -57,9 +57,9 @@ class WorkoutRecommendation(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     generated_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    reason = Column(Enum(RecommendationReason), nullable=False)
+    reason = Column(Enum(RecommendationReason, values_callable=lambda x: [e.value for e in x]), nullable=False)
     exercises = Column(JSONB, nullable=False)  # [{exercise_id, exercise_name, muscle_groups, sets, reps, rest_time, reason}]
-    status = Column(Enum(RecommendationStatus), default=RecommendationStatus.PENDING, nullable=False, index=True)
+    status = Column(Enum(RecommendationStatus, values_callable=lambda x: [e.value for e in x]), default=RecommendationStatus.PENDING, nullable=False, index=True)
     context = Column(JSONB, nullable=True)  # снапшот данных на момент генерации
 
     user = relationship("User", back_populates="recommendations")

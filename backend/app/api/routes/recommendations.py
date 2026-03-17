@@ -336,13 +336,14 @@ async def get_today_recommendation(
     current_user: User = Depends(get_current_active_user),
 ):
     """Вернуть сегодняшнюю рекомендацию или сгенерировать новую."""
+    user_id = current_user.id  # cache before try to avoid MissingGreenlet on expired ORM object
     try:
         today_start = datetime.combine(date.today(), datetime.min.time())
         result = await db.execute(
             select(WorkoutRecommendation)
             .where(
                 and_(
-                    WorkoutRecommendation.user_id == current_user.id,
+                    WorkoutRecommendation.user_id == user_id,
                     WorkoutRecommendation.generated_at >= today_start,
                     WorkoutRecommendation.status != RecommendationStatus.SKIPPED,
                 )
@@ -350,12 +351,12 @@ async def get_today_recommendation(
             .order_by(desc(WorkoutRecommendation.generated_at))
         )
         existing = result.scalars().first()
-        return existing if existing else await _generate(current_user.id, db)
+        return existing if existing else await _generate(user_id, db)
     except HTTPException:
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"GET /recommendations/today failed for user {current_user.id}: {e}")
+        logger.error(f"GET /recommendations/today failed for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Не удалось загрузить рекомендацию")
 
 
@@ -365,13 +366,14 @@ async def force_generate(
     current_user: User = Depends(get_current_active_user),
 ):
     """Принудительно сгенерировать новую рекомендацию."""
+    user_id = current_user.id
     try:
-        return await _generate(current_user.id, db)
+        return await _generate(user_id, db)
     except HTTPException:
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"POST /recommendations/generate failed for user {current_user.id}: {e}")
+        logger.error(f"POST /recommendations/generate failed for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендацию")
 
 
