@@ -9,7 +9,7 @@ import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { scheduleAPI, exercisesAPI, ProgramWithDetails, Exercise, WorkoutLog } from '@/lib/api'
+import { scheduleAPI, exercisesAPI, ProgramWithDetails, Exercise } from '@/lib/api'
 import { getDayName, cn } from '@/lib/utils'
 import { MuscleMap } from '@/components/ui/MuscleMap'
 import { Modal } from '@/components/ui/Modal'
@@ -28,7 +28,6 @@ import {
 export default function SchedulePage() {
   const router = useRouter()
   const [program, setProgram] = useState<ProgramWithDetails | null>(null)
-  const [history, setHistory] = useState<WorkoutLog[]>([])
   const [exercises, setExercises] = useState<Record<string, Exercise>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,10 +73,6 @@ export default function SchedulePage() {
       exRes.data.forEach(e => exMap[e.id] = e)
       setExercises(exMap)
 
-      if (progRes.data) {
-        const histRes = await scheduleAPI.getHistory({ program_id: progRes.data.id })
-        setHistory(histRes.data)
-      }
     } catch (error) {
       console.error('Error fetching schedule data:', error)
     } finally {

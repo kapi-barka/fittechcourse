@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { recommendationsAPI, WorkoutRecommendation, RecommendedExercise } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -154,7 +154,7 @@ export default function RecommendationsPage() {
   const toggleExercise = (exerciseId: string) => {
     setCompletedExercises(prev => {
       const next = new Set(prev)
-      next.has(exerciseId) ? next.delete(exerciseId) : next.add(exerciseId)
+      if (next.has(exerciseId)) { next.delete(exerciseId) } else { next.add(exerciseId) }
       return next
     })
   }
