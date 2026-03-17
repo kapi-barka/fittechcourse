@@ -6,11 +6,14 @@ API для умных рекомендаций тренировок.
   2. Recovery       — исключает мышцы, нагруженные за последние 48ч
   3. Nutrition Sync — корректирует объём нагрузки по вчерашнему белку
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, or_, desc
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 from datetime import datetime, date, timedelta
 from uuid import UUID
 
@@ -62,31 +65,35 @@ async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
     Возвращает список мышечных групп (lower-case), которые были
     нагружены за последние 48 часов (через WorkoutLog → ProgramDetail → Exercise).
     """
-    since = datetime.utcnow() - timedelta(hours=48)
-    logs_result = await db.execute(
-        select(WorkoutLog).where(
-            and_(WorkoutLog.user_id == user_id, WorkoutLog.completed_at >= since)
-        )
-    )
-    recent_logs = logs_result.scalars().all()
-
-    fatigued: set[str] = set()
-    for log in recent_logs:
-        details_result = await db.execute(
-            select(ProgramDetail)
-            .options(selectinload(ProgramDetail.exercise))
-            .where(
-                and_(
-                    ProgramDetail.program_id == log.program_id,
-                    ProgramDetail.day_number == log.day_number,
-                )
+    try:
+        since = datetime.utcnow() - timedelta(hours=48)
+        logs_result = await db.execute(
+            select(WorkoutLog).where(
+                and_(WorkoutLog.user_id == user_id, WorkoutLog.completed_at >= since)
             )
         )
-        for detail in details_result.scalars().all():
-            if detail.exercise and detail.exercise.muscle_groups:
-                fatigued.update(m.lower() for m in detail.exercise.muscle_groups)
+        recent_logs = logs_result.scalars().all()
 
-    return list(fatigued)
+        fatigued: set[str] = set()
+        for log in recent_logs:
+            details_result = await db.execute(
+                select(ProgramDetail)
+                .options(selectinload(ProgramDetail.exercise))
+                .where(
+                    and_(
+                        ProgramDetail.program_id == log.program_id,
+                        ProgramDetail.day_number == log.day_number,
+                    )
+                )
+            )
+            for detail in details_result.scalars().all():
+                if detail.exercise and detail.exercise.muscle_groups:
+                    fatigued.update(m.lower() for m in detail.exercise.muscle_groups)
+
+        return list(fatigued)
+    except Exception as e:
+        logger.warning(f"_get_fatigued_muscles failed: {e}")
+        return []
 
 
 def _compute_weak_points(profile: UserProfile | None, metric: BodyMetric | None) -> list[dict]:
@@ -122,42 +129,47 @@ def _compute_weak_points(profile: UserProfile | None, metric: BodyMetric | None)
     return sorted(weak_points, key=lambda x: x["deficit"], reverse=True)
 
 
-async def _get_nutrition_modifier(user_id: UUID, profile: UserProfile | None, db: AsyncSession) -> dict:
+async def _get_nutrition_modifier(user_id: UUID, profile: Optional[UserProfile], db: AsyncSession) -> dict:
     """
     Вычисляет модификатор объёма нагрузки на основе вчерашнего потребления белка.
     """
-    yesterday = date.today() - timedelta(days=1)
-    start = datetime.combine(yesterday, datetime.min.time())
-    end   = datetime.combine(yesterday, datetime.max.time())
+    _default = {"yesterday_protein": 0.0, "target_protein": None, "protein_ratio": 1.0, "volume_modifier": "normal"}
+    try:
+        yesterday = date.today() - timedelta(days=1)
+        start = datetime.combine(yesterday, datetime.min.time())
+        end   = datetime.combine(yesterday, datetime.max.time())
 
-    logs_result = await db.execute(
-        select(NutritionLog)
-        .options(selectinload(NutritionLog.product))
-        .where(
-            and_(
-                NutritionLog.user_id == user_id,
-                NutritionLog.eaten_at >= start,
-                NutritionLog.eaten_at <= end,
+        logs_result = await db.execute(
+            select(NutritionLog)
+            .options(selectinload(NutritionLog.product))
+            .where(
+                and_(
+                    NutritionLog.user_id == user_id,
+                    NutritionLog.eaten_at >= start,
+                    NutritionLog.eaten_at <= end,
+                )
             )
         )
-    )
-    logs = logs_result.scalars().all()
+        logs = logs_result.scalars().all()
 
-    yesterday_protein = sum(
-        (log.product.proteins * log.weight_g / 100)
-        for log in logs
-        if log.product and log.product.proteins
-    )
+        yesterday_protein = sum(
+            (log.product.proteins * log.weight_g / 100)
+            for log in logs
+            if log.product and log.product.proteins
+        )
 
-    target_protein = profile.target_proteins if profile and profile.target_proteins else None
-    ratio = (yesterday_protein / target_protein) if target_protein and target_protein > 0 else 1.0
+        target_protein = profile.target_proteins if profile and profile.target_proteins else None
+        ratio = (yesterday_protein / target_protein) if target_protein and target_protein > 0 else 1.0
 
-    return {
-        "yesterday_protein": round(yesterday_protein, 1),
-        "target_protein": target_protein,
-        "protein_ratio": round(ratio, 2),
-        "volume_modifier": "low" if ratio < 0.7 else ("high" if ratio > 1.1 else "normal"),
-    }
+        return {
+            "yesterday_protein": round(yesterday_protein, 1),
+            "target_protein": target_protein,
+            "protein_ratio": round(ratio, 2),
+            "volume_modifier": "low" if ratio < 0.7 else ("high" if ratio > 1.1 else "normal"),
+        }
+    except Exception as e:
+        logger.warning(f"_get_nutrition_modifier failed: {e}")
+        return _default
 
 
 def _apply_volume(base_sets: int, modifier: str) -> int:
@@ -174,25 +186,28 @@ async def _find_exercises(
     db: AsyncSession,
     limit: int = 6,
 ) -> list[Exercise]:
-    if not include_keywords:
-        result = await db.execute(select(Exercise).limit(limit))
+    try:
+        query = select(Exercise)
+
+        if include_keywords:
+            include_cond = [
+                func.array_to_string(Exercise.muscle_groups, ",").ilike(f"%{kw}%")
+                for kw in include_keywords
+            ]
+            query = query.where(or_(*include_cond))
+
+        if exclude_keywords:
+            exclude_cond = [
+                func.array_to_string(Exercise.muscle_groups, ",").ilike(f"%{kw}%")
+                for kw in exclude_keywords
+            ]
+            query = query.where(~or_(*exclude_cond))
+
+        result = await db.execute(query.limit(limit))
         return result.scalars().all()
-
-    include_cond = [
-        func.array_to_string(Exercise.muscle_groups, ",").ilike(f"%{kw}%")
-        for kw in include_keywords
-    ]
-    query = select(Exercise).where(or_(*include_cond))
-
-    if exclude_keywords:
-        exclude_cond = [
-            func.array_to_string(Exercise.muscle_groups, ",").ilike(f"%{kw}%")
-            for kw in exclude_keywords
-        ]
-        query = query.where(~or_(*exclude_cond))
-
-    result = await db.execute(query.limit(limit))
-    return result.scalars().all()
+    except Exception as e:
+        logger.warning(f"_find_exercises failed: {e}")
+        return []
 
 
 # ──────────────────────────────────────────────────────
@@ -293,17 +308,22 @@ async def _generate(user_id: UUID, db: AsyncSession) -> WorkoutRecommendation:
                 "reason":   "Свободная тренировка",
             })
 
-    rec = WorkoutRecommendation(
-        user_id=user_id,
-        reason=reason,
-        exercises=rec_exercises,
-        status=RecommendationStatus.PENDING,
-        context=context,
-    )
-    db.add(rec)
-    await db.commit()
-    await db.refresh(rec)
-    return rec
+    try:
+        rec = WorkoutRecommendation(
+            user_id=user_id,
+            reason=reason,
+            exercises=rec_exercises,
+            status=RecommendationStatus.PENDING,
+            context=context,
+        )
+        db.add(rec)
+        await db.commit()
+        await db.refresh(rec)
+        return rec
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to save recommendation: {e}")
+        raise
 
 
 # ──────────────────────────────────────────────────────
@@ -316,21 +336,27 @@ async def get_today_recommendation(
     current_user: User = Depends(get_current_active_user),
 ):
     """Вернуть сегодняшнюю рекомендацию или сгенерировать новую."""
-    today_start = datetime.combine(date.today(), datetime.min.time())
-
-    result = await db.execute(
-        select(WorkoutRecommendation)
-        .where(
-            and_(
-                WorkoutRecommendation.user_id == current_user.id,
-                WorkoutRecommendation.generated_at >= today_start,
-                WorkoutRecommendation.status != RecommendationStatus.SKIPPED,
+    try:
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        result = await db.execute(
+            select(WorkoutRecommendation)
+            .where(
+                and_(
+                    WorkoutRecommendation.user_id == current_user.id,
+                    WorkoutRecommendation.generated_at >= today_start,
+                    WorkoutRecommendation.status != RecommendationStatus.SKIPPED,
+                )
             )
+            .order_by(desc(WorkoutRecommendation.generated_at))
         )
-        .order_by(desc(WorkoutRecommendation.generated_at))
-    )
-    existing = result.scalars().first()
-    return existing if existing else await _generate(current_user.id, db)
+        existing = result.scalars().first()
+        return existing if existing else await _generate(current_user.id, db)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"GET /recommendations/today failed for user {current_user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Не удалось загрузить рекомендацию")
 
 
 @router.post("/generate", response_model=WorkoutRecommendationResponse)
@@ -339,7 +365,14 @@ async def force_generate(
     current_user: User = Depends(get_current_active_user),
 ):
     """Принудительно сгенерировать новую рекомендацию."""
-    return await _generate(current_user.id, db)
+    try:
+        return await _generate(current_user.id, db)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"POST /recommendations/generate failed for user {current_user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендацию")
 
 
 @router.post("/{recommendation_id}/accept")
