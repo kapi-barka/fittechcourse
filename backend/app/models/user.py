@@ -60,6 +60,8 @@ class User(Base):
     user_programs = relationship("UserProgram", back_populates="user", cascade="all, delete-orphan")
     custom_products = relationship("FoodProduct", back_populates="user", cascade="all, delete-orphan")
     hydration_logs = relationship("HydrationLog", back_populates="user", cascade="all, delete-orphan")
+    performance_logs = relationship("ExercisePerformanceLog", back_populates="user", cascade="all, delete-orphan")
+    recommendations = relationship("WorkoutRecommendation", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserProfile(Base):

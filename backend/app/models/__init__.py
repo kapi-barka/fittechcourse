@@ -9,6 +9,7 @@ from app.models.metrics import BodyMetric
 from app.models.nutrition import FoodProduct, NutritionLog, HydrationLog
 from app.models.article import Article
 from app.models.user_program import UserProgram
+from app.models.recommendation import ExercisePerformanceLog, WorkoutRecommendation
 
 __all__ = [
     "User",
@@ -22,5 +23,7 @@ __all__ = [
     "HydrationLog",
     "Article",
     "UserProgram",
+    "ExercisePerformanceLog",
+    "WorkoutRecommendation",
 ]
 

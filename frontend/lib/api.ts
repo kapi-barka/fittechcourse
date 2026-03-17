@@ -214,6 +214,41 @@ export interface WorkoutLog {
   notes?: string
 }
 
+export interface RecommendedExercise {
+  exercise_id: string
+  exercise_name: string
+  muscle_groups: string[]
+  sets: number
+  reps: number
+  rest_time: number
+  reason: string
+}
+
+export interface WorkoutRecommendation {
+  id: string
+  generated_at: string
+  reason: 'weak_point' | 'recovery' | 'nutrition_sync' | 'free_day'
+  exercises: RecommendedExercise[]
+  status: 'pending' | 'accepted' | 'skipped' | 'completed'
+  context?: {
+    analyzed_at: string
+    fatigued_muscles: string[]
+    weak_points: Array<{
+      measurement: string
+      current: number
+      target: number
+      deficit: number
+      muscles: string[]
+    }>
+    nutrition: {
+      yesterday_protein: number
+      target_protein: number | null
+      protein_ratio: number
+      volume_modifier: 'low' | 'normal' | 'high'
+    }
+  }
+}
+
 // ============ API функции ============
 
 // Расписание и трекинг
@@ -225,9 +260,14 @@ export const scheduleAPI = {
   getScheduleStatus: () => api.get<{
     current_week: number;
     current_day_of_week: number;
+    completed_workouts: number;
+    total_workout_days: number;
+    workouts_per_week: number;
+    duration_weeks: number;
+    training_days: number[];
+    progress_percent: number;
     is_completed_today: boolean;
     start_date: string;
-    completed_workouts?: number;
   } | null>('/schedule/status'),
 
   logWorkout: (data: {
@@ -240,6 +280,38 @@ export const scheduleAPI = {
 
   getHistory: (params?: { skip?: number; limit?: number; program_id?: string }) =>
     api.get<WorkoutLog[]>('/schedule/history', { params }),
+}
+
+// Рекомендации
+export const recommendationsAPI = {
+  getToday: () =>
+    api.get<WorkoutRecommendation>('/recommendations/today'),
+
+  generate: () =>
+    api.post<WorkoutRecommendation>('/recommendations/generate'),
+
+  accept: (id: string) =>
+    api.post(`/recommendations/${id}/accept`),
+
+  complete: (id: string) =>
+    api.post(`/recommendations/${id}/complete`),
+
+  skip: (id: string) =>
+    api.post(`/recommendations/${id}/skip`),
+
+  getHistory: (params?: { skip?: number; limit?: number }) =>
+    api.get<WorkoutRecommendation[]>('/recommendations/history', { params }),
+
+  logExercise: (data: {
+    exercise_id: string
+    source_type: 'program' | 'recommendation' | 'free'
+    source_id?: string
+    sets_done: number
+    reps_done: number
+    weight_kg?: number
+    rpe?: number
+    notes?: string
+  }) => api.post('/recommendations/log-exercise', data),
 }
 
 // Аутентификация

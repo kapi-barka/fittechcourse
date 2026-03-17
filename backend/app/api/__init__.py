@@ -2,7 +2,7 @@
 API роутеры
 """
 from fastapi import APIRouter
-from app.api.routes import auth, users, programs, nutrition, articles, exercises, metrics, schedule, upload, user_programs, analytics
+from app.api.routes import auth, users, programs, nutrition, articles, exercises, metrics, schedule, upload, user_programs, analytics, recommendations
 
 api_router = APIRouter()
 
@@ -18,4 +18,5 @@ api_router.include_router(nutrition.router, prefix="/nutrition", tags=["Nutritio
 api_router.include_router(articles.router, prefix="/articles", tags=["Articles"])
 api_router.include_router(user_programs.router, prefix="/my", tags=["User Programs"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+api_router.include_router(recommendations.router, prefix="/recommendations", tags=["Recommendations"])
 

@@ -22,8 +22,6 @@ import {
   Trophy,
   Dumbbell,
   Info,
-  ChevronDown,
-  ChevronUp,
   RotateCcw
 } from 'lucide-react'
 
@@ -36,7 +34,7 @@ export default function SchedulePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notes, setNotes] = useState('')
   const [duration, setDuration] = useState('')
-  const [showHistory, setShowHistory] = useState(false)
+
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
@@ -46,9 +44,14 @@ export default function SchedulePage() {
   const [scheduleStatus, setScheduleStatus] = useState<{
     current_week: number;
     current_day_of_week: number;
+    completed_workouts: number;
+    total_workout_days: number;
+    workouts_per_week: number;
+    duration_weeks: number;
+    training_days: number[];
+    progress_percent: number;
     is_completed_today: boolean;
     start_date: string;
-    completed_workouts?: number;
   } | null>(null)
 
   useEffect(() => {
@@ -89,7 +92,7 @@ export default function SchedulePage() {
     try {
       await scheduleAPI.logWorkout({
         program_id: program.id,
-        day_number: scheduleStatus.current_day_of_week,
+        day_number: currentDay,
         duration_minutes: duration ? parseInt(duration) : undefined,
         notes: notes
       })
@@ -154,26 +157,18 @@ export default function SchedulePage() {
 
   const currentWeek = scheduleStatus?.current_week || 1
   const currentDay = scheduleStatus?.current_day_of_week || 1
-  const totalWeeks = program?.duration_weeks || 4
-  const isFinished = currentWeek > totalWeeks
+  const totalWeeks = scheduleStatus?.duration_weeks || program?.duration_weeks || 4
+  const isFinished = scheduleStatus ? scheduleStatus.completed_workouts >= scheduleStatus.total_workout_days && scheduleStatus.total_workout_days > 0 : false
 
   // Find exercises for today (day number matches weekday)
   const todaysExercises = program?.details
     .filter(d => d.day_number === currentDay)
     .sort((a, b) => a.order - b.order) || []
 
-
-  // Calculate total workout days
-  const workoutsPerWeek = program ? new Set(program.details.map(d => d.day_number)).size : 0
-  const totalWorkoutDays = workoutsPerWeek * (program?.duration_weeks || 1)
-
-  // Completed workouts (from status)
   const completedWorkouts = scheduleStatus?.completed_workouts || 0
-
-  // Progress
-  const progressPercent = totalWorkoutDays > 0
-    ? Math.min(100, (completedWorkouts / totalWorkoutDays) * 100)
-    : 0
+  const workoutsPerWeek = scheduleStatus?.workouts_per_week || 0
+  const totalWorkoutDays = scheduleStatus?.total_workout_days || 0
+  const progressPercent = scheduleStatus?.progress_percent || 0
 
   return (
     <AuthGuard>
@@ -237,42 +232,63 @@ export default function SchedulePage() {
                 </Card>
 
                 <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowHistory(!showHistory)}>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Последние тренировки</CardTitle>
-                      {showHistory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Прогресс по неделям</CardTitle>
+                    <CardDescription>
+                      {completedWorkouts} из {totalWorkoutDays} тренировок выполнено
+                    </CardDescription>
                   </CardHeader>
-                  {showHistory && (
-                    <CardContent>
-                      {history.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">История пуста</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {history.slice(0, 3).map(log => (
-                            <div key={log.id} className="flex items-center justify-between pb-2 border-b last:border-0 text-sm">
-                              <div className="flex items-center">
-                                <CheckCircle2 className="h-3 w-3 text-primary mr-2" />
-                                <span>{getDayName(log.day_number)}</span>
-                              </div>
-                              <span className="text-muted-foreground">
-                                {new Date(log.completed_at).toLocaleDateString()}
+                  <CardContent>
+                    {workoutsPerWeek === 0 ? (
+                      <p className="text-sm text-muted-foreground">Нет данных о программе</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {Array.from({ length: totalWeeks }, (_, weekIndex) => {
+                          const weekNumber = weekIndex + 1
+                          const doneInThisWeek = Math.min(
+                            workoutsPerWeek,
+                            Math.max(0, completedWorkouts - weekIndex * workoutsPerWeek)
+                          )
+                          const isCurrentWeek = weekNumber === currentWeek
+                          return (
+                            <div key={weekIndex} className="flex items-center gap-3">
+                              <span className={cn(
+                                "text-xs w-16 shrink-0",
+                                isCurrentWeek ? "text-primary font-semibold" : "text-muted-foreground"
+                              )}>
+                                Неделя {weekNumber}
                               </span>
+                              <div className="flex gap-2 flex-wrap">
+                                {Array.from({ length: workoutsPerWeek }, (_, dayIndex) => {
+                                  const isDone = dayIndex < doneInThisWeek
+                                  const isCurrent = isCurrentWeek && dayIndex === doneInThisWeek
+                                  return (
+                                    <div
+                                      key={dayIndex}
+                                      title={isDone ? `Тренировка ${weekIndex * workoutsPerWeek + dayIndex + 1} выполнена` : undefined}
+                                      className={cn(
+                                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                                        isDone
+                                          ? "bg-primary text-primary-foreground"
+                                          : isCurrent
+                                            ? "border-2 border-primary bg-primary/10"
+                                            : "bg-muted text-muted-foreground"
+                                      )}
+                                    >
+                                      {isDone
+                                        ? <CheckCircle2 className="h-4 w-4" />
+                                        : <span className="text-xs">{weekIndex * workoutsPerWeek + dayIndex + 1}</span>
+                                      }
+                                    </div>
+                                  )
+                                })}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  )}
-                  {!showHistory && (
-                    <CardContent className="py-2">
-                      <p className="text-sm text-muted-foreground">
-                        {history.length > 0
-                          ? `Последняя: ${new Date(history[0].completed_at).toLocaleDateString()}`
-                          : 'Нет записей'}
-                      </p>
-                    </CardContent>
-                  )}
+                          )
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
                 </Card>
               </div>
 

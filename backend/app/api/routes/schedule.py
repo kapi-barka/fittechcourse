@@ -12,7 +12,7 @@ from uuid import UUID
 from app.db.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User, UserProfile
-from app.models.program import Program, WorkoutLog
+from app.models.program import Program, ProgramDetail, WorkoutLog
 from app.models.user_program import UserProgram, ProgramStatus
 from app.schemas.program import WorkoutLogCreate, WorkoutLogResponse, ProgramWithDetails
 
@@ -144,42 +144,46 @@ async def get_schedule_status(
     
     if not active_up:
         return None
-    
-    # 2. Считаем количество выполненных тренировок для этой программы
-    log_count_stmt = select(func.count(WorkoutLog.id)).where(
+
+    # 2. Загружаем структуру программы для определения тренировочных дней
+    program_stmt = select(ProgramDetail.day_number).where(
+        ProgramDetail.program_id == active_up.program_id
+    ).distinct()
+    result = await db.execute(program_stmt)
+    training_days = sorted([row[0] for row in result.fetchall()])
+    workouts_per_week = len(training_days)
+
+    # Загружаем duration_weeks программы
+    prog_stmt = select(Program.duration_weeks).where(Program.id == active_up.program_id)
+    result = await db.execute(prog_stmt)
+    duration_weeks = result.scalar() or 1
+    total_workout_days = workouts_per_week * duration_weeks
+
+    # 3. Выполненные тренировки с датами
+    logs_stmt = select(WorkoutLog).where(
         and_(
             WorkoutLog.user_id == current_user.id,
             WorkoutLog.program_id == active_up.program_id
         )
-    )
-    result = await db.execute(log_count_stmt)
-    completed_workouts_count = result.scalar() or 0
-    
-    # 3. Определяем текущую неделю и день на основе количества выполненных
-    # Формула: мы начинаем с 1-й тренировки. Если выполнено 0, то мы на 1-й. Если выполнено 5, мы на 6-й.
-    current_workout_number = completed_workouts_count + 1
-    
-    # Предполагаем, что стандартная неделя это 3-4-5 тренировок? 
-    # Нет, расписание обычно по дням (Day 1, Day 2...).
-    # Если мы привязываемся к дням программы, то current_day_number - это следующий невыполненный.
-    
-    # Но нам нужно также знать "День недели" для отображения календаря?
-    # Пользователь хочет: "прогресс связать не с неделей а с днем и выполнены ли упражнения за этот день"
-    
-    # Давайте вернем данные для фронтенда так:
-    # current_week (расчетное) = (completed_workouts_count // 7) + 1 (если считаем что 7 дней в неделе всегда)
-    # real_current_day = completed_workouts_count + 1
-    
-    current_week = (completed_workouts_count // 7) + 1
-    
-    # Для отображения "сегодняшнего" дня недели (Пн, Вт...) оставляем календарный день
+    ).order_by(WorkoutLog.completed_at)
+    result = await db.execute(logs_stmt)
+    logs = result.scalars().all()
+    completed_workouts_count = len(logs)
+
+    # 4. Текущая неделя — считаем по реальному числу тренировок в неделе
+    current_week = (completed_workouts_count // workouts_per_week) + 1 if workouts_per_week > 0 else 1
+
+    # 5. Процент прогресса
+    progress_percent = round(min(100, (completed_workouts_count / total_workout_days) * 100)) if total_workout_days > 0 else 0
+
+    # 6. Сегодняшний день недели
     today = date.today()
     current_day_of_week = today.isoweekday()
-    
-    # 4. Проверяем, выполнена ли тренировка СЕГОДНЯ
+
+    # 7. Выполнена ли тренировка сегодня
     start_of_day = datetime.combine(today, datetime.min.time())
     end_of_day = datetime.combine(today, datetime.max.time())
-    
+
     todays_log_stmt = select(WorkoutLog).where(
         and_(
             WorkoutLog.user_id == current_user.id,
@@ -190,13 +194,18 @@ async def get_schedule_status(
     )
     result = await db.execute(todays_log_stmt)
     todays_log = result.scalars().first()
-    
+
     return {
-        "current_week": current_week,          # Расчетная неделя (1, 2...)
-        "current_day_of_week": current_day_of_week, # 1=Пн, 7=Вс
-        "completed_workouts": completed_workouts_count, # Всего выполнено
+        "current_week": current_week,
+        "current_day_of_week": current_day_of_week,
+        "completed_workouts": completed_workouts_count,
+        "total_workout_days": total_workout_days,
+        "workouts_per_week": workouts_per_week,
+        "duration_weeks": duration_weeks,
+        "training_days": training_days,
+        "progress_percent": progress_percent,
         "is_completed_today": todays_log is not None,
-        "start_date": active_up.start_date
+        "start_date": active_up.start_date,
     }
 
 

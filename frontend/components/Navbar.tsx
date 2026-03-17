@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Shield,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react'
 import { Button } from './ui/Button'
 
@@ -44,6 +45,7 @@ export const Navbar = () => {
       { href: '/programs', label: 'Программы', icon: Dumbbell },
       { href: '/my-programs', label: 'Мои программы', icon: Activity },
       { href: '/diary', label: 'Дневник', icon: Utensils },
+      { href: '/recommendations', label: 'Рекомендации', icon: Sparkles },
       { href: '/articles', label: 'Статьи', icon: BookOpen },
     ]
 

@@ -20,6 +20,7 @@ class Exercise(Base):
     video_urls = Column(ARRAY(String), nullable=True)  # Ссылки на видео
     description = Column(String, nullable=True)  # Описание техники выполнения
 
-    # Relationship
+    # Relationships
     program_details = relationship("ProgramDetail", back_populates="exercise", cascade="all, delete-orphan")
+    performance_logs = relationship("ExercisePerformanceLog", back_populates="exercise")
 
