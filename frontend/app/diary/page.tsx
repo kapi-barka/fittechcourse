@@ -1,603 +1,426 @@
 /**
- * Страница дневника - питание и метрики
+ * Дневник — питание, замеры, вода
  */
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { AddMealModal } from '@/components/AddMealModal'
 import { EditMetricModal } from '@/components/EditMetricModal'
 import { EditLogModal } from '@/components/EditLogModal'
 import { WaterTracker } from '@/components/nutrition/WaterTracker'
-import { metricsAPI, nutritionAPI, BodyMetric, NutritionLog } from '@/lib/api'
+import { metricsAPI, nutritionAPI, usersAPI, BodyMetric, NutritionLog, UserProfile } from '@/lib/api'
 import {
-  Apple,
-  Activity,
-  Plus,
-  Trash2,
-  Scale,
-  Flame,
-  Sun,
-  UtensilsCrossed,
-  Moon,
-  Coffee,
-  Droplet,
-  Edit
+  Apple, Activity, Plus, Trash2, Scale, Flame,
+  Sun, UtensilsCrossed, Moon, Coffee, Droplet,
+  Edit, Beef, Droplets, Wheat, ChevronDown,
 } from 'lucide-react'
-import { formatDate, round } from '@/lib/utils'
+import { formatDate, round, cn } from '@/lib/utils'
 import { toast } from 'react-toastify'
+
+// ── Утилиты ─────────────────────────────────────────────────
+
+const TODAY = new Date()
+const TODAY_STR = TODAY.toISOString().split('T')[0]
+const TODAY_LABEL = TODAY.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+
+const MEAL_CONFIG: Record<string, { label: string; icon: React.ElementType; accent: string; bg: string }> = {
+  breakfast: { label: 'Завтрак',  icon: Sun,            accent: 'border-yellow-400/60', bg: 'bg-yellow-400/10' },
+  lunch:     { label: 'Обед',     icon: UtensilsCrossed, accent: 'border-orange-400/60', bg: 'bg-orange-400/10' },
+  dinner:    { label: 'Ужин',     icon: Moon,            accent: 'border-blue-400/60',   bg: 'bg-blue-400/10'   },
+  snack:     { label: 'Перекус',  icon: Coffee,          accent: 'border-green-400/60',  bg: 'bg-green-400/10'  },
+  other:     { label: 'Другое',   icon: Apple,           accent: 'border-white/20',      bg: 'bg-white/5'       },
+}
+
+const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'other']
+
+// ── Кольцо калорий ──────────────────────────────────────────
+
+function CalorieRing({ value, target }: { value: number; target: number }) {
+  const r = 42
+  const circ = 2 * Math.PI * r
+  const pct = target > 0 ? Math.min(value / target, 1) : 0
+  const dash = pct * circ
+  const color = pct > 1.05 ? '#f87171' : pct >= 0.85 ? '#4ade80' : '#64748b'
+
+  return (
+    <svg width="100" height="100" viewBox="0 0 100 100" className="shrink-0">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+      <circle
+        cx="50" cy="50" r={r} fill="none"
+        stroke={color} strokeWidth="10"
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 50 50)"
+        style={{ transition: 'stroke-dasharray 0.6s ease' }}
+      />
+      <text x="50" y="46" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">
+        {round(value, 0)}
+      </text>
+      <text x="50" y="60" textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="9">
+        из {target || '—'}
+      </text>
+    </svg>
+  )
+}
+
+// ── Прогресс макроса ────────────────────────────────────────
+
+function MacroBar({
+  label, value, target, icon: Icon, color, trackColor,
+}: {
+  label: string; value: number; target: number
+  icon: React.ElementType; color: string; trackColor: string
+}) {
+  const pct = target > 0 ? Math.min((value / target) * 100, 100) : 0
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-1 mb-1">
+        <Icon className={cn('h-3 w-3 shrink-0', color)} />
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="text-sm font-semibold leading-none mb-1.5">
+        {round(value, 0)}<span className="text-muted-foreground font-normal text-xs">/{target || '—'}г</span>
+      </p>
+      <div className="h-1 rounded-full bg-white/8">
+        <div className={cn('h-1 rounded-full transition-all', trackColor)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Группа приёмов пищи ─────────────────────────────────────
+
+function MealGroup({
+  type, logs, onEdit, onDelete,
+}: {
+  type: string; logs: NutritionLog[]
+  onEdit: (l: NutritionLog) => void; onDelete: (id: string) => void
+}) {
+  const [open, setOpen] = useState(true)
+  const cfg = MEAL_CONFIG[type] ?? MEAL_CONFIG.other
+  const Icon = cfg.icon
+  const total = logs.reduce((s, l) => s + (l.calories || 0), 0)
+
+  return (
+    <div className={cn('rounded-xl border-l-4 bg-card/60', cfg.accent)}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <div className="flex items-center gap-2">
+          <div className={cn('flex items-center justify-center w-7 h-7 rounded-lg', cfg.bg)}>
+            <Icon className="h-3.5 w-3.5 text-foreground/70" />
+          </div>
+          <span className="font-semibold text-sm">{cfg.label}</span>
+          <span className="text-xs text-muted-foreground">{logs.length} позиц.</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{round(total, 0)} ккал</span>
+          <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-3 space-y-1.5">
+          {logs.map(log => (
+            <div key={log.id} className="flex items-center gap-3 py-2 border-t border-white/5">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{log.product_name || 'Продукт'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {round(log.weight_g, 0)}г · {round(log.calories || 0, 0)} ккал
+                  {log.proteins != null && (
+                    <span className="ml-1.5 hidden sm:inline">
+                      Б:{round(log.proteins, 0)} Ж:{round(log.fats || 0, 0)} У:{round(log.carbs || 0, 0)}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={() => onEdit(log)}
+                  className="p-1.5 rounded-lg hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onDelete(log.id)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Основной компонент ──────────────────────────────────────
 
 function DiaryContent() {
   const searchParams = useSearchParams()
-  const initialTab = searchParams.get('tab') || 'nutrition'
+  const initialTab = (searchParams.get('tab') as 'nutrition' | 'metrics' | 'hydration') || 'nutrition'
 
-  const [activeTab, setActiveTab] = useState<'nutrition' | 'metrics' | 'hydration'>(
-    (initialTab as 'nutrition' | 'metrics' | 'hydration') || 'nutrition'
-  )
-  const [metrics, setMetrics] = useState<BodyMetric[]>([])
+  const [activeTab, setActiveTab] = useState<'nutrition' | 'metrics' | 'hydration'>(initialTab)
+  const [profile, setProfile]         = useState<UserProfile | null>(null)
+  const [metrics, setMetrics]         = useState<BodyMetric[]>([])
   const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([])
-  const [dailySummary, setDailySummary] = useState({
-    total_calories: 0,
-    total_proteins: 0,
-    total_fats: 0,
-    total_carbs: 0
-  })
-  const [isLoading, setIsLoading] = useState(true)
+  const [dailySummary, setDailySummary]   = useState({ total_calories: 0, total_proteins: 0, total_fats: 0, total_carbs: 0 })
+  const [isLoading, setIsLoading]         = useState(true)
   const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false)
   const [editingMetric, setEditingMetric] = useState<BodyMetric | null>(null)
-  const [editingLog, setEditingLog] = useState<NutritionLog | null>(null)
+  const [editingLog, setEditingLog]       = useState<NutritionLog | null>(null)
 
-  // Форма добавления замера
   const [newMetric, setNewMetric] = useState({
-    weight: '',
-    chest: '',
-    waist: '',
-    hips: '',
-    biceps: '',
-    thigh: '',
-    date: new Date().toISOString().split('T')[0]
+    weight: '', chest: '', waist: '', hips: '', biceps: '', thigh: '', neck: '',
+    date: TODAY_STR,
   })
 
   useEffect(() => {
-    if (activeTab === 'nutrition') {
-      fetchNutrition()
-    } else if (activeTab === 'metrics') {
-      fetchMetrics()
-    }
-    // hydration не требует загрузки данных при переключении
-  }, [activeTab])
+    usersAPI.getMe().then(r => setProfile(r.data.profile ?? null)).catch(() => {})
+  }, [])
 
-  const fetchMetrics = async () => {
-    setIsLoading(true)
-    try {
-      const res = await metricsAPI.list()
-      setMetrics(res.data)
-    } catch (error) {
-      console.error('Error fetching metrics:', error)
-    }
-    setIsLoading(false)
-  }
+  useEffect(() => {
+    if (activeTab === 'nutrition') fetchNutrition()
+    else if (activeTab === 'metrics') fetchMetrics()
+  }, [activeTab])
 
   const fetchNutrition = async () => {
     setIsLoading(true)
     try {
-      const today = new Date().toISOString().split('T')[0]
-      const [logsRes, summaryRes] = await Promise.all([
-        nutritionAPI.listLogs({ from_date: today, to_date: today }),
-        nutritionAPI.getDailySummary(today)
+      const [logsRes, sumRes] = await Promise.all([
+        nutritionAPI.listLogs({ from_date: TODAY_STR, to_date: TODAY_STR }),
+        nutritionAPI.getDailySummary(TODAY_STR),
       ])
-
       setNutritionLogs(logsRes.data)
-      setDailySummary(summaryRes.data)
-    } catch (error) {
-      console.error('Error fetching nutrition:', error)
-    }
+      setDailySummary(sumRes.data)
+    } catch { /* silent */ }
     setIsLoading(false)
   }
 
-  const validateMetric = (): string | null => {
-    if (newMetric.weight) {
-      const weight = parseFloat(newMetric.weight)
-      if (isNaN(weight) || weight < 20 || weight > 300) {
-        return 'Вес должен быть от 20 до 300 кг'
-      }
-    }
-    if (newMetric.chest) {
-      const chest = parseFloat(newMetric.chest)
-      if (isNaN(chest) || chest < 50 || chest > 200) {
-        return 'Обхват груди должен быть от 50 до 200 см'
-      }
-    }
-    if (newMetric.waist) {
-      const waist = parseFloat(newMetric.waist)
-      if (isNaN(waist) || waist < 40 || waist > 200) {
-        return 'Обхват талии должен быть от 40 до 200 см'
-      }
-    }
-    if (newMetric.hips) {
-      const hips = parseFloat(newMetric.hips)
-      if (isNaN(hips) || hips < 50 || hips > 200) {
-        return 'Обхват бедер должен быть от 50 до 200 см'
-      }
-    }
-    if (newMetric.biceps) {
-      const biceps = parseFloat(newMetric.biceps)
-      if (isNaN(biceps) || biceps < 15 || biceps > 80) {
-        return 'Обхват бицепса должен быть от 15 до 80 см'
-      }
-    }
-    if (newMetric.thigh) {
-      const thigh = parseFloat(newMetric.thigh)
-      if (isNaN(thigh) || thigh < 30 || thigh > 150) {
-        return 'Обхват бедра должен быть от 30 до 150 см'
-      }
-    }
-    return null
+  const fetchMetrics = async () => {
+    setIsLoading(true)
+    try { setMetrics((await metricsAPI.list()).data) } catch { /* silent */ }
+    setIsLoading(false)
   }
 
   const handleAddMetric = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const validationError = validateMetric()
-    if (validationError) {
-      toast.error(validationError)
-      return
-    }
-    
     try {
       await metricsAPI.create({
         date: newMetric.date,
-        weight: newMetric.weight ? parseFloat(newMetric.weight) : undefined,
-        chest: newMetric.chest ? parseFloat(newMetric.chest) : undefined,
-        waist: newMetric.waist ? parseFloat(newMetric.waist) : undefined,
-        hips: newMetric.hips ? parseFloat(newMetric.hips) : undefined,
-        biceps: newMetric.biceps ? parseFloat(newMetric.biceps) : undefined,
-        thigh: newMetric.thigh ? parseFloat(newMetric.thigh) : undefined,
+        weight:  newMetric.weight  ? parseFloat(newMetric.weight)  : undefined,
+        chest:   newMetric.chest   ? parseFloat(newMetric.chest)   : undefined,
+        waist:   newMetric.waist   ? parseFloat(newMetric.waist)   : undefined,
+        hips:    newMetric.hips    ? parseFloat(newMetric.hips)    : undefined,
+        biceps:  newMetric.biceps  ? parseFloat(newMetric.biceps)  : undefined,
+        thigh:   newMetric.thigh   ? parseFloat(newMetric.thigh)   : undefined,
+        neck:    newMetric.neck    ? parseFloat(newMetric.neck)    : undefined,
       })
-
-      setNewMetric({ 
-        weight: '', 
-        chest: '', 
-        waist: '', 
-        hips: '',
-        biceps: '',
-        thigh: '',
-        date: new Date().toISOString().split('T')[0] 
-      })
+      setNewMetric({ weight: '', chest: '', waist: '', hips: '', biceps: '', thigh: '', neck: '', date: TODAY_STR })
       fetchMetrics()
-      toast.success('Замер успешно добавлен')
-    } catch (error) {
-      console.error('Error adding metric:', error)
-      toast.error('Ошибка при добавлении замера')
-    }
+      toast.success('Замер добавлен')
+    } catch { toast.error('Ошибка при добавлении замера') }
   }
 
   const handleDeleteLog = async (id: string) => {
-    if (!confirm('Вы уверены, что хотите удалить эту запись?')) return
-    
-    try {
-      await nutritionAPI.deleteLog(id)
-      fetchNutrition()
-      toast.success('Запись удалена')
-    } catch (error) {
-      console.error('Error deleting log:', error)
-      toast.error('Ошибка при удалении записи')
-    }
+    if (!confirm('Удалить запись?')) return
+    try { await nutritionAPI.deleteLog(id); fetchNutrition(); toast.success('Удалено') }
+    catch { toast.error('Ошибка') }
   }
 
   const handleDeleteMetric = async (id: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этот замер?')) return
-    
-    try {
-      await metricsAPI.delete(id)
-      fetchMetrics()
-      toast.success('Замер удален')
-    } catch (error) {
-      console.error('Error deleting metric:', error)
-      toast.error('Ошибка при удалении замера')
-    }
+    if (!confirm('Удалить замер?')) return
+    try { await metricsAPI.delete(id); fetchMetrics(); toast.success('Удалено') }
+    catch { toast.error('Ошибка') }
   }
 
-  // Группировка приемов пищи по типам
-  const groupMealsByType = (logs: NutritionLog[]) => {
-    const grouped: Record<string, NutritionLog[]> = {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-      snack: [],
-      other: []
-    }
+  // Группировка по типу приёма
+  const grouped = MEAL_ORDER.reduce<Record<string, NutritionLog[]>>((acc, t) => {
+    acc[t] = nutritionLogs.filter(l => (l.meal_type || 'other') === t)
+    return acc
+  }, {})
 
-    logs.forEach(log => {
-      const mealType = log.meal_type || 'other'
-      if (grouped[mealType]) {
-        grouped[mealType].push(log)
-      } else {
-        grouped.other.push(log)
-      }
-    })
-
-    return grouped
-  }
-
-  const mealTypeLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-    breakfast: { label: 'Завтрак', icon: <Sun className="h-5 w-5" />, color: 'text-yellow-600 dark:text-yellow-400' },
-    lunch: { label: 'Обед', icon: <UtensilsCrossed className="h-5 w-5" />, color: 'text-orange-600 dark:text-orange-400' },
-    dinner: { label: 'Ужин', icon: <Moon className="h-5 w-5" />, color: 'text-blue-600 dark:text-blue-400' },
-    snack: { label: 'Перекус', icon: <Coffee className="h-5 w-5" />, color: 'text-green-500 dark:text-green-400/80' },
-    other: { label: 'Другое', icon: <Apple className="h-5 w-5" />, color: 'text-muted-foreground' }
-  }
-
-  const groupedMeals = groupMealsByType(nutritionLogs)
+  const tabs = [
+    { id: 'nutrition',  label: 'Питание',  icon: Apple   },
+    { id: 'metrics',    label: 'Замеры',   icon: Activity },
+    { id: 'hydration',  label: 'Вода',     icon: Droplet  },
+  ] as const
 
   return (
     <AuthGuard>
-      <div className="min-h-screen">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
-        <main className="container mx-auto px-4 py-8">
-          {/* Табы */}
-          <div className="flex space-x-2 mb-8 border-b">
+        {/* ── Табы ──────────────────────────────────── */}
+        <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
+          {tabs.map(({ id, label, icon: Icon }) => (
             <button
-              onClick={() => setActiveTab('nutrition')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'nutrition'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all',
+                activeTab === id
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
             >
-              <Apple className="inline-block mr-2 h-4 w-4" />
-              Питание
+              <Icon className="h-4 w-4" />{label}
             </button>
-            <button
-              onClick={() => setActiveTab('metrics')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'metrics'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <Activity className="inline-block mr-2 h-4 w-4" />
-              Замеры
-            </button>
-            <button
-              onClick={() => setActiveTab('hydration')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'hydration'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <Droplet className="inline-block mr-2 h-4 w-4" />
-              Вода
-            </button>
+          ))}
+        </div>
+
+        {/* ══════════════ ПИТАНИЕ ══════════════ */}
+        {activeTab === 'nutrition' && (
+          <div className="space-y-4">
+            {/* Заголовок дня */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Сегодня</p>
+                <h1 className="text-lg font-bold capitalize">{TODAY_LABEL}</h1>
+              </div>
+              <button
+                onClick={() => setIsAddMealModalOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />Добавить
+              </button>
+            </div>
+
+            {/* Сводка: кольцо + макросы */}
+            <div className="rounded-2xl border border-white/8 bg-card/60 p-4 flex items-center gap-5">
+              <CalorieRing
+                value={dailySummary.total_calories}
+                target={profile?.target_calories ?? 0}
+              />
+              <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
+                <MacroBar label="Белки"    value={dailySummary.total_proteins} target={profile?.target_proteins ?? 0} icon={Beef}     color="text-red-400"    trackColor="bg-red-400"    />
+                <MacroBar label="Жиры"     value={dailySummary.total_fats}     target={profile?.target_fats     ?? 0} icon={Droplets} color="text-yellow-400" trackColor="bg-yellow-400" />
+                <MacroBar label="Углев."   value={dailySummary.total_carbs}    target={profile?.target_carbs    ?? 0} icon={Wheat}    color="text-blue-400"   trackColor="bg-blue-400"   />
+                <MacroBar label="Калории"  value={dailySummary.total_calories} target={profile?.target_calories ?? 0} icon={Flame}    color="text-orange-400" trackColor="bg-orange-400" />
+              </div>
+            </div>
+
+            {/* Приёмы пищи */}
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+            ) : nutritionLogs.length === 0 ? (
+              <div className="rounded-2xl border border-white/8 bg-card/40 py-14 text-center">
+                <Apple className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Нет записей за сегодня</p>
+                <button
+                  onClick={() => setIsAddMealModalOpen(true)}
+                  className="mt-4 text-sm text-primary hover:underline"
+                >
+                  Добавить первый приём
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {MEAL_ORDER.map(type =>
+                  grouped[type].length > 0 ? (
+                    <MealGroup
+                      key={type}
+                      type={type}
+                      logs={grouped[type]}
+                      onEdit={setEditingLog}
+                      onDelete={handleDeleteLog}
+                    />
+                  ) : null
+                )}
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Контент табов */}
-          {activeTab === 'nutrition' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Левая колонка - КБЖУ (одна панель) */}
-              <div className="lg:col-span-3">
-                <Card className="border-0">
-                  <CardContent className="pt-4 pb-4 space-y-4">
+        {/* ══════════════ ЗАМЕРЫ ══════════════ */}
+        {activeTab === 'metrics' && (
+          <div className="space-y-5">
+            {/* Форма */}
+            <div className="rounded-2xl border border-white/8 bg-card/60 p-5">
+              <p className="text-sm font-semibold mb-4">Новый замер</p>
+              <form onSubmit={handleAddMetric} className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="col-span-2 sm:col-span-1">
+                    <Input label="Дата" type="date" value={newMetric.date}
+                      onChange={e => setNewMetric({ ...newMetric, date: e.target.value })} required />
+                  </div>
+                  {[
+                    { field: 'weight', label: 'Вес (кг)',    ph: '75.5' },
+                    { field: 'chest',  label: 'Грудь (см)',  ph: '95'   },
+                    { field: 'waist',  label: 'Талия (см)',  ph: '80'   },
+                    { field: 'hips',   label: 'Бёдра (см)',  ph: '100'  },
+                    { field: 'biceps', label: 'Бицепс (см)', ph: '35'   },
+                    { field: 'thigh',  label: 'Бедро (см)',  ph: '60'   },
+                    { field: 'neck',   label: 'Шея (см)',    ph: '38'   },
+                  ].map(({ field, label, ph }) => (
+                    <Input
+                      key={field} label={label} type="number" step="0.1"
+                      placeholder={ph} value={(newMetric as Record<string, string>)[field]}
+                      onChange={e => setNewMetric({ ...newMetric, [field]: e.target.value })}
+                    />
+                  ))}
+                </div>
+                <Button type="submit" className="rounded-xl">
+                  <Plus className="h-4 w-4 mr-1.5" />Добавить замер
+                </Button>
+              </form>
+            </div>
+
+            {/* История */}
+            {isLoading ? (
+              <div className="text-center py-10 text-muted-foreground text-sm">Загрузка...</div>
+            ) : metrics.length === 0 ? (
+              <div className="rounded-2xl border border-white/8 bg-card/40 py-12 text-center">
+                <Scale className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Нет замеров. Добавь первый!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {metrics.map(m => (
+                  <div key={m.id} className="rounded-2xl border border-white/8 bg-card/60 px-4 py-3 flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Калории</div>
-                      <div className="text-lg font-semibold">{round(dailySummary.total_calories, 0)}</div>
-                      <Flame className="h-3 w-3 text-orange-500 mt-1" />
+                      <p className="text-sm font-semibold mb-2">{formatDate(m.date)}</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {m.weight && <span className="flex items-center gap-1"><Scale className="h-3 w-3" />{m.weight} кг</span>}
+                        {m.chest  && <span>Грудь {m.chest} см</span>}
+                        {m.waist  && <span>Талия {m.waist} см</span>}
+                        {m.hips   && <span>Бёдра {m.hips} см</span>}
+                        {m.biceps && <span>Бицепс {m.biceps} см</span>}
+                        {m.thigh  && <span>Бедро {m.thigh} см</span>}
+                        {m.neck   && <span>Шея {m.neck} см</span>}
+                      </div>
                     </div>
-                    <div className="border-t pt-4">
-                      <div className="text-xs text-muted-foreground mb-1">Белки</div>
-                      <div className="text-lg font-semibold">{round(dailySummary.total_proteins, 1)} г</div>
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => setEditingMetric(m)}
+                        className="p-1.5 rounded-lg hover:bg-white/8 text-muted-foreground hover:text-foreground transition-colors">
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteMetric(m.id)}
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                    <div className="border-t pt-4">
-                      <div className="text-xs text-muted-foreground mb-1">Жиры</div>
-                      <div className="text-lg font-semibold">{round(dailySummary.total_fats, 1)} г</div>
-                    </div>
-                    <div className="border-t pt-4">
-                      <div className="text-xs text-muted-foreground mb-1">Углеводы</div>
-                      <div className="text-lg font-semibold">{round(dailySummary.total_carbs, 1)} г</div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
+        )}
 
-              {/* Правая колонка - Записи питания */}
-              <div className="lg:col-span-9">
-                <Card className="border-0">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle>Приемы пищи сегодня</CardTitle>
-                      <Button
-                        size="sm"
-                        onClick={() => setIsAddMealModalOpen(true)}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Добавить
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoading ? (
-                      <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
-                    ) : nutritionLogs.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Нет записей за сегодня
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {Object.entries(groupedMeals).map(([mealType, logs]) => {
-                          if (logs.length === 0) return null
-                          
-                          const mealInfo = mealTypeLabels[mealType] || mealTypeLabels.other
-                          const mealTotal = logs.reduce((acc, log) => ({
-                            calories: acc.calories + (log.calories || 0),
-                            proteins: acc.proteins + (log.proteins || 0),
-                            fats: acc.fats + (log.fats || 0),
-                            carbs: acc.carbs + (log.carbs || 0)
-                          }), { calories: 0, proteins: 0, fats: 0, carbs: 0 })
-
-                          return (
-                            <div key={mealType} className="space-y-3">
-                              {/* Заголовок типа приема пищи */}
-                              <div className="flex items-center justify-between pb-2 border-b">
-                                <div className="flex items-center gap-2">
-                                  <div className={mealInfo.color}>
-                                    {mealInfo.icon}
-                                  </div>
-                                  <h3 className="font-semibold text-lg">{mealInfo.label}</h3>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {round(mealTotal.calories, 0)} ккал
-                                </div>
-                              </div>
-                              
-                              {/* Список продуктов в этом приеме пищи */}
-                              <div className="space-y-2">
-                                {logs.map((log) => (
-                                  <div key={log.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group">
-                                    <div className="flex-1">
-                                      <p className="font-medium">{log.product_name || `Продукт #${log.product_id.slice(0, 8)}`}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {log.weight_g ? round(log.weight_g, 0) : 0}г • {log.calories ? round(log.calories, 0) : 0} ккал
-                                        {log.proteins && log.fats && log.carbs && (
-                                          <span className="ml-2">
-                                            Б: {round(log.proteins, 1)}г Ж: {round(log.fats, 1)}г У: {round(log.carbs, 1)}г
-                                          </span>
-                                        )}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setEditingLog(log)}
-                                        className="h-8 px-2"
-                                        title="Редактировать"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDeleteLog(log.id)}
-                                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        title="Удалить"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          ) : activeTab === 'hydration' ? (
-            <div>
-              <WaterTracker />
-            </div>
-          ) : (
-            <div>
-              {/* Форма добавления замера */}
-              <Card className="border-0 mb-8">
-                <CardHeader>
-                  <CardTitle>Добавить замер</CardTitle>
-                  <CardDescription>Введи свои текущие показатели</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleAddMetric} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Дата"
-                        type="date"
-                        value={newMetric.date}
-                        onChange={(e) => setNewMetric({ ...newMetric, date: e.target.value })}
-                        required
-                      />
-                      <div>
-                      <Input
-                        label="Вес (кг)"
-                        type="number"
-                        step="0.1"
-                        placeholder="75.5"
-                        value={newMetric.weight}
-                        onChange={(e) => setNewMetric({ ...newMetric, weight: e.target.value })}
-                          min="20"
-                          max="300"
-                      />
-                        <p className="text-xs text-muted-foreground mt-1">От 20 до 300 кг</p>
-                      </div>
-                      <div>
-                      <Input
-                        label="Грудь (см)"
-                        type="number"
-                        step="0.1"
-                        placeholder="95"
-                        value={newMetric.chest}
-                        onChange={(e) => setNewMetric({ ...newMetric, chest: e.target.value })}
-                          min="50"
-                          max="200"
-                      />
-                        <p className="text-xs text-muted-foreground mt-1">От 50 до 200 см</p>
-                      </div>
-                      <div>
-                      <Input
-                        label="Талия (см)"
-                        type="number"
-                        step="0.1"
-                        placeholder="80"
-                        value={newMetric.waist}
-                        onChange={(e) => setNewMetric({ ...newMetric, waist: e.target.value })}
-                          min="40"
-                          max="200"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">От 40 до 200 см</p>
-                      </div>
-                      <div>
-                        <Input
-                          label="Бедра (см)"
-                          type="number"
-                          step="0.1"
-                          placeholder="100"
-                          value={newMetric.hips}
-                          onChange={(e) => setNewMetric({ ...newMetric, hips: e.target.value })}
-                          min="50"
-                          max="200"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">От 50 до 200 см</p>
-                      </div>
-                      <div>
-                        <Input
-                          label="Бицепс (см)"
-                          type="number"
-                          step="0.1"
-                          placeholder="35"
-                          value={newMetric.biceps}
-                          onChange={(e) => setNewMetric({ ...newMetric, biceps: e.target.value })}
-                          min="15"
-                          max="80"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">От 15 до 80 см</p>
-                      </div>
-                      <div>
-                        <Input
-                          label="Бедро (см)"
-                          type="number"
-                          step="0.1"
-                          placeholder="60"
-                          value={newMetric.thigh}
-                          onChange={(e) => setNewMetric({ ...newMetric, thigh: e.target.value })}
-                          min="30"
-                          max="150"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">От 30 до 150 см</p>
-                      </div>
-                    </div>
-                    <Button type="submit">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Добавить замер
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* История замеров */}
-              <Card className="border-0">
-                <CardHeader>
-                  <CardTitle>История замеров</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
-                  ) : metrics.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Нет замеров. Добавь первый!
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {metrics.map((metric) => (
-                        <div key={metric.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group">
-                          <div className="flex-1">
-                            <p className="font-medium">{formatDate(metric.date)}</p>
-                            <div className="flex items-center flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
-                              {metric.weight && (
-                                <span className="flex items-center">
-                                  <Scale className="h-4 w-4 mr-1" />
-                                  {metric.weight} кг
-                                </span>
-                              )}
-                              {metric.chest && <span>Грудь: {metric.chest} см</span>}
-                              {metric.waist && <span>Талия: {metric.waist} см</span>}
-                              {metric.hips && <span>Бедра: {metric.hips} см</span>}
-                              {metric.biceps && <span>Бицепс: {metric.biceps} см</span>}
-                              {metric.thigh && <span>Бедро: {metric.thigh} см</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingMetric(metric)}
-                              className="h-8 px-2"
-                              title="Редактировать"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteMetric(metric.id)}
-                              className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              title="Удалить"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </main>
-
-        {/* Модальное окно добавления приёма пищи */}
-        <AddMealModal
-          isOpen={isAddMealModalOpen}
-          onClose={() => setIsAddMealModalOpen(false)}
-          onSuccess={() => {
-            fetchNutrition()
-          }}
-        />
-
-        {/* Модальное окно редактирования замера */}
-        <EditMetricModal
-          isOpen={editingMetric !== null}
-          onClose={() => setEditingMetric(null)}
-          metric={editingMetric}
-          onSuccess={() => {
-            fetchMetrics()
-          }}
-        />
-
-        {/* Модальное окно редактирования записи питания */}
-        <EditLogModal
-          isOpen={editingLog !== null}
-          onClose={() => setEditingLog(null)}
-          log={editingLog}
-          onSuccess={() => {
-            fetchNutrition()
-          }}
-        />
+        {/* ══════════════ ВОДА ══════════════ */}
+        {activeTab === 'hydration' && <WaterTracker />}
       </div>
+
+      {/* Модалки */}
+      <AddMealModal isOpen={isAddMealModalOpen} onClose={() => setIsAddMealModalOpen(false)} onSuccess={fetchNutrition} />
+      <EditMetricModal isOpen={editingMetric !== null} onClose={() => setEditingMetric(null)} metric={editingMetric} onSuccess={fetchMetrics} />
+      <EditLogModal isOpen={editingLog !== null} onClose={() => setEditingLog(null)} log={editingLog} onSuccess={fetchNutrition} />
     </AuthGuard>
   )
 }
@@ -607,7 +430,7 @@ export default function DiaryPage() {
     <Suspense fallback={
       <AuthGuard>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-muted-foreground">Загрузка...</div>
+          <div className="text-muted-foreground text-sm">Загрузка...</div>
         </div>
       </AuthGuard>
     }>
@@ -615,4 +438,3 @@ export default function DiaryPage() {
     </Suspense>
   )
 }
-

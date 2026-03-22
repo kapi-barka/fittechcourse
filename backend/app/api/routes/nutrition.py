@@ -26,7 +26,7 @@ from app.schemas.nutrition import (
 )
 from pydantic import BaseModel, Field
 from app.services.openfoodfacts import get_product_by_barcode
-from app.services.product_recognition import recognize_product
+from app.services.product_recognition import recognize_product, recognize_product_from_text
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -289,6 +289,44 @@ async def recognize_product_from_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при распознавании продукта: {str(e)}"
         )
+
+
+class TextRecognitionRequest(BaseModel):
+    dish_name: str = Field(..., min_length=1, max_length=300, description="Название блюда или продукта")
+
+
+@router.post("/recognize-product-text")
+async def recognize_product_from_text_endpoint(
+    request: TextRecognitionRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Определить КБЖУ блюда/продукта по текстовому названию с помощью AI (OpenAI gpt-4o-mini).
+    """
+    api_key = settings.OPENAI_API_KEY
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OpenAI API ключ не настроен на сервере."
+        )
+
+    product_data = await recognize_product_from_text(
+        dish_name=request.dish_name,
+        api_key=api_key,
+    )
+
+    if not product_data:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Не удалось определить КБЖУ. Уточните название блюда и попробуйте ещё раз."
+        )
+
+    logger.info(
+        f"Text recognition by user {current_user.id}: "
+        f"'{request.dish_name}' -> '{product_data.get('name')}' "
+        f"confidence={product_data.get('confidence')}"
+    )
+    return product_data
 
 
 @router.post("/lookup-barcode", response_model=FoodProductResponse)

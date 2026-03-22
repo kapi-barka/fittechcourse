@@ -1221,10 +1221,115 @@ async def recognize_product(
             logger.warning(f"Recognition failed by {provider} after {elapsed_time:.2f}s")
         
         return result
-        
+
     except Exception as e:
         elapsed_time = __import__('time').time() - start_time
         print(f"  ❌ [recognize_product] ERROR in {provider} after {elapsed_time:.2f}s: {e}")
         logger.error(f"Error in {provider} recognition after {elapsed_time:.2f}s: {e}", exc_info=True)
+        return None
+
+
+async def recognize_product_from_text(
+    dish_name: str,
+    api_key: str,
+) -> Optional[Dict[str, Any]]:
+    """
+    Определяет КБЖУ блюда/продукта по его текстовому названию через Google Gemini.
+
+    Args:
+        dish_name: Название блюда или продукта (введённое пользователем)
+        api_key:   Google Gemini API ключ
+
+    Returns:
+        Dict с информацией о продукте или None
+    """
+    try:
+        import httpx
+        import json
+        import re
+
+        prompt = f"""Ты эксперт-диетолог. Пользователь ввёл название блюда или продукта: "{dish_name}".
+
+Определи КБЖУ на 100 граммов этого блюда/продукта.
+
+Верни ответ ТОЛЬКО в формате JSON, без дополнительного текста:
+{{
+    "name": "точное название на русском языке",
+    "description": "краткое описание (1-2 предложения о составе или способе приготовления)",
+    "estimated_calories_per_100g": число или null,
+    "estimated_proteins_per_100g": число или null,
+    "estimated_fats_per_100g": число или null,
+    "estimated_carbs_per_100g": число или null,
+    "brand": null,
+    "category": "категория продукта (мясо, крупы, молочные продукты, готовое блюдо и т.д.)",
+    "confidence": "высокая" или "средняя" или "низкая"
+}}
+
+ПРАВИЛА:
+- Все числа должны быть числовыми значениями, не строками (например: 41, а не "41 ккал")
+- Если блюдо сложное — указывай средние значения для типичного рецепта
+- Если не уверен — используй null и снижай confidence
+- Исправь опечатки в названии при необходимости"""
+
+        # Пробуем модели по приоритету
+        model_candidates = [
+            ("v1beta", "gemini-1.5-flash"),
+            ("v1beta", "gemini-1.5-pro"),
+            ("v1beta", "gemini-2.0-flash"),
+            ("v1", "gemini-pro"),
+        ]
+
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600},
+        }
+
+        content = None
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for api_version, model_name in model_candidates:
+                url = (
+                    f"https://generativelanguage.googleapis.com/{api_version}"
+                    f"/models/{model_name}:generateContent?key={api_key}"
+                )
+                try:
+                    response = await client.post(url, json=payload)
+                    if response.status_code == 200:
+                        content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+                        logger.info(f"Gemini text recognition using {model_name}")
+                        break
+                    logger.warning(f"Gemini {model_name} returned {response.status_code}")
+                except Exception as e:
+                    logger.warning(f"Gemini {model_name} error: {e}")
+                    continue
+
+        if not content:
+            logger.error("All Gemini models failed for text recognition")
+            return None
+
+        # Парсим JSON
+        try:
+            product_data = json.loads(content)
+        except json.JSONDecodeError:
+            match = re.search(r'\{.*\}', content, re.DOTALL)
+            if match:
+                product_data = json.loads(match.group())
+            else:
+                logger.error(f"Could not parse JSON from Gemini response: {content[:200]}")
+                return None
+
+        # Нормализация числовых полей
+        for key in ['estimated_calories_per_100g', 'estimated_proteins_per_100g',
+                    'estimated_fats_per_100g', 'estimated_carbs_per_100g']:
+            if key in product_data and product_data[key] is not None:
+                try:
+                    product_data[key] = float(product_data[key])
+                except (ValueError, TypeError):
+                    product_data[key] = None
+
+        logger.info(f"Text recognition: '{product_data.get('name')}' confidence={product_data.get('confidence')}")
+        return product_data
+
+    except Exception as e:
+        logger.error(f"Error in text recognition: {e}", exc_info=True)
         return None
 

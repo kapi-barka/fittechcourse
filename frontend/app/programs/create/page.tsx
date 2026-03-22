@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 import { getDayName } from '@/lib/utils'
-import { STANDARD_MUSCLE_GROUPS, type StandardMuscleGroup } from '@/lib/muscleGroups'
+import { STANDARD_MUSCLE_GROUPS, type StandardMuscleGroup, translateMuscleGroup } from '@/lib/muscleGroups'
 
 interface ProgramDetail {
   exercise_id: string
@@ -33,26 +33,6 @@ interface ProgramDetail {
   rest_time: number
   order: number
   notes: string
-}
-
-const MUSCLE_GROUP_LABELS: Record<StandardMuscleGroup, string> = {
-  'chest': 'Грудь',
-  'lats': 'Широчайшие',
-  'lowerback': 'Поясница',
-  'quads': 'Квадрицепсы',
-  'hamstrings': 'Бицепс бедра',
-  'calves': 'Икры',
-  'glutes': 'Ягодицы',
-  'shoulders': 'Плечи',
-  'rear-shoulders': 'Задние дельты',
-  'triceps': 'Трицепсы',
-  'biceps': 'Бицепсы',
-  'abdominals': 'Пресс',
-  'obliques': 'Косые мышцы',
-  'traps': 'Трапеции',
-  'traps-middle': 'Средняя трапеция',
-  'forearms': 'Предплечья',
-  'hands': 'Руки',
 }
 
 export default function CreateProgramPage() {
@@ -354,7 +334,7 @@ export default function CreateProgramPage() {
                           }}
                           className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
-                        <span className="text-sm">{MUSCLE_GROUP_LABELS[muscle]}</span>
+                        <span className="text-sm">{translateMuscleGroup(muscle)}</span>
                       </label>
                     ))}
                   </div>

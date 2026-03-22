@@ -16,6 +16,7 @@ class BodyMetricCreate(BaseModel):
     hips: Optional[float] = Field(None, ge=50, le=200, description="Обхват бедер в см (от 50 до 200)")
     biceps: Optional[float] = Field(None, ge=15, le=80, description="Обхват бицепса в см (от 15 до 80)")
     thigh: Optional[float] = Field(None, ge=30, le=150, description="Обхват бедра в см (от 30 до 150)")
+    neck: Optional[float] = Field(None, ge=20, le=60, description="Обхват шеи в см (от 20 до 60)")
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 
@@ -28,6 +29,7 @@ class BodyMetricUpdate(BaseModel):
     hips: Optional[float] = Field(None, ge=50, le=200, description="Обхват бедер в см (от 50 до 200)")
     biceps: Optional[float] = Field(None, ge=15, le=80, description="Обхват бицепса в см (от 15 до 80)")
     thigh: Optional[float] = Field(None, ge=30, le=150, description="Обхват бедра в см (от 30 до 150)")
+    neck: Optional[float] = Field(None, ge=20, le=60, description="Обхват шеи в см (от 20 до 60)")
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 
@@ -43,6 +45,7 @@ class BodyMetricResponse(BaseModel):
     hips: Optional[float] = None
     biceps: Optional[float] = None
     thigh: Optional[float] = None
+    neck: Optional[float] = None
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 

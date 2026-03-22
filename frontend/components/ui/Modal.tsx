@@ -54,13 +54,13 @@ export const Modal = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 pt-20 animate-in fade-in duration-200"
+      className="fixed inset-0 z-40 flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3 pt-16 sm:p-4 sm:pt-4 animate-in fade-in duration-200 overflow-y-auto"
       onClick={handleOverlayClick}
       ref={overlayRef}
     >
       <div
         className={cn(
-          "bg-background rounded-lg shadow-xl w-full max-w-md border relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto",
+          "bg-background rounded-lg shadow-xl w-full max-w-md border relative animate-in zoom-in-95 duration-200 max-h-[calc(100vh-4rem)] sm:max-h-[90vh] overflow-y-auto my-auto",
           className
         )}
       >

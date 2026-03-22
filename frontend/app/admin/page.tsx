@@ -21,6 +21,7 @@ import {
   BookOpen
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { translateMuscleGroup } from '@/lib/muscleGroups'
 import { Modal } from '@/components/ui/Modal'
 import { ExerciseForm } from '@/components/admin/ExerciseForm'
 import { ArticleForm } from '@/components/admin/ArticleForm'
@@ -184,38 +185,38 @@ export default function AdminPage() {
     <AuthGuard requireRole="admin">
       <div className="min-h-screen">
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-4 sm:py-8">
           {/* Табы */}
-          <div className="flex space-x-2 mb-8 border-b">
+          <div className="flex space-x-1 mb-8 border-b overflow-x-auto">
             <button
               onClick={() => setActiveTab('users')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'users'
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${activeTab === 'users'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
-              <Users className="inline-block mr-2 h-4 w-4" />
-              Пользователи
+              <Users className="h-4 w-4 shrink-0" />
+              <span>Пользователи</span>
             </button>
             <button
               onClick={() => setActiveTab('exercises')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'exercises'
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${activeTab === 'exercises'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
-              <Dumbbell className="inline-block mr-2 h-4 w-4" />
-              Упражнения
+              <Dumbbell className="h-4 w-4 shrink-0" />
+              <span>Упражнения</span>
             </button>
             <button
               onClick={() => setActiveTab('articles')}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'articles'
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap shrink-0 ${activeTab === 'articles'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
-              <BookOpen className="inline-block mr-2 h-4 w-4" />
-              Статьи
+              <BookOpen className="h-4 w-4 shrink-0" />
+              <span>Статьи</span>
             </button>
           </div>
 
@@ -266,7 +267,7 @@ export default function AdminPage() {
                       return name.includes(query) || email.includes(query)
                     })
                     .map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                      <div key={user.id} className="flex items-start justify-between gap-2 p-3 sm:p-4 rounded-lg bg-muted/50">
                         <div>
                           <p className="font-medium">{user.profile?.full_name || user.email}</p>
                           <div className="flex items-center space-x-3 mt-1 text-sm text-muted-foreground">
@@ -288,18 +289,20 @@ export default function AdminPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleBlockUser(user.id)}
+                                className="text-destructive hover:text-destructive"
                               >
-                                <UserX className="h-4 w-4 text-destructive mr-2" />
-                                Заблокировать
+                                <UserX className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Заблокировать</span>
                               </Button>
                             ) : (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleUnblockUser(user.id)}
+                                className="text-green-500 hover:text-green-500"
                               >
-                                <UserCheck className="h-4 w-4 text-green-500 mr-2" />
-                                Разблокировать
+                                <UserCheck className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Разблокировать</span>
                               </Button>
                             )
                           )}
@@ -313,8 +316,8 @@ export default function AdminPage() {
                         <p className="font-medium">{exercise.name}</p>
                         <div className="flex gap-2 mt-1">
                           {exercise.muscle_groups?.map(m => (
-                            <span key={m} className="text-xs text-muted-foreground bg-background border px-1.5 py-0.5 rounded capitalize">
-                              {m}
+                            <span key={m} className="text-xs text-muted-foreground bg-background border px-1.5 py-0.5 rounded">
+                              {translateMuscleGroup(m)}
                             </span>
                           ))}
                         </div>

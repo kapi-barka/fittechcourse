@@ -56,7 +56,7 @@ export default function RootLayout({
           <ServiceWorkerRegistration />
           <GlobalBackground />
           <Navbar />
-          <div className="relative z-10 min-h-screen w-full">
+          <div className="relative z-10 min-h-screen w-full animate-fade-in">
             {children}
           </div>
           <ToastContainer

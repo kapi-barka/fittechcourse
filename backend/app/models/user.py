@@ -35,6 +35,21 @@ class Gender(str, enum.Enum):
     OTHER = "other"
 
 
+class FitnessGoal(str, enum.Enum):
+    """Основная цель тренировок"""
+    LOSE_FAT = "lose_fat"            # Похудение
+    GAIN_MUSCLE = "gain_muscle"      # Набор мышечной массы
+    RECOMPOSITION = "recomposition"  # Рекомпозиция тела
+    MAINTAIN = "maintain"            # Поддержание формы
+
+
+class ExperienceLevel(str, enum.Enum):
+    """Уровень физической подготовки"""
+    BEGINNER = "beginner"            # Новичок (< 1 года)
+    INTERMEDIATE = "intermediate"    # Средний (1–3 года)
+    ADVANCED = "advanced"            # Продвинутый (3+ лет)
+
+
 class User(Base):
     """
     Модель пользователя - основная таблица для аутентификации
@@ -62,6 +77,7 @@ class User(Base):
     hydration_logs = relationship("HydrationLog", back_populates="user", cascade="all, delete-orphan")
     performance_logs = relationship("ExercisePerformanceLog", back_populates="user", cascade="all, delete-orphan")
     recommendations = relationship("WorkoutRecommendation", back_populates="user", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -87,7 +103,9 @@ class UserProfile(Base):
     target_biceps = Column(Float, nullable=True)  # Целевой обхват бицепса в см
     target_thigh = Column(Float, nullable=True)  # Целевой обхват бедра в см
     activity_level = Column(Enum(ActivityLevel), default=ActivityLevel.SEDENTARY, nullable=True)
-    
+    fitness_goal = Column(Enum(FitnessGoal), nullable=True)
+    experience_level = Column(Enum(ExperienceLevel), nullable=True)
+
     # Active Program
     current_program_id = Column(UUID(as_uuid=True), ForeignKey("programs.id", ondelete="SET NULL"), nullable=True)
     current_program_start_date = Column(Date, nullable=True)

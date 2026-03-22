@@ -114,6 +114,11 @@ class Settings(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None  # Опционально, для бесплатного tier не обязателен
     PRODUCT_RECOGNITION_PROVIDER: str = "openai"  # openai, google, gemini (gemini-pro/flash), spoonacular, huggingface (нестабильно)
 
+    # Google Cloud / Vertex AI (опционально — для GCP-деплоя)
+    # Если задан GOOGLE_CLOUD_PROJECT, AI-тренер использует Vertex AI SDK вместо прямого Gemini API
+    GOOGLE_CLOUD_PROJECT: Optional[str] = None
+    GOOGLE_CLOUD_LOCATION: str = "us-central1"
+
     model_config = SettingsConfigDict(
         env_file=get_env_files(),
         case_sensitive=True,

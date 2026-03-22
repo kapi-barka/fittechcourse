@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { MuscleMap } from '@/components/ui/MuscleMap'
-import { svgIdToStandardMuscleGroups, standardMuscleGroupToSvgIds, type StandardMuscleGroup } from '@/lib/muscleGroups'
+import { svgIdToStandardMuscleGroups, standardMuscleGroupToSvgIds, type StandardMuscleGroup, translateMuscleGroup } from '@/lib/muscleGroups'
 import { X, Plus, Video, RefreshCw, Upload, Loader2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 
@@ -155,7 +155,7 @@ export const ExerciseForm = ({
                             <div className="flex flex-wrap gap-2">
                                 {formData.muscle_groups.map(m => (
                                     <div key={m} className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm flex items-center">
-                                        <span className="capitalize">{m}</span>
+                                        <span>{translateMuscleGroup(m)}</span>
                                         <button
                                             type="button"
                                             onClick={() => toggleMuscle(m)}

@@ -85,7 +85,9 @@ export interface UserProfile {
   target_hips?: number
   target_biceps?: number
   target_thigh?: number
-  activity_level?: string
+  activity_level?: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active'
+  fitness_goal?: 'lose_fat' | 'gain_muscle' | 'recomposition' | 'maintain'
+  experience_level?: 'beginner' | 'intermediate' | 'advanced'
   current_program_id?: string
   avatar_url?: string
 }
@@ -156,6 +158,7 @@ export interface BodyMetric {
   hips?: number
   biceps?: number
   thigh?: number
+  neck?: number
   photo_url?: string
   notes?: string
 }
@@ -405,6 +408,19 @@ export const nutritionAPI = {
     })
   },
 
+  recognizeProductFromText: (dishName: string) =>
+    api.post<{
+      name: string
+      description?: string
+      estimated_calories_per_100g?: number | null
+      estimated_proteins_per_100g?: number | null
+      estimated_fats_per_100g?: number | null
+      estimated_carbs_per_100g?: number | null
+      brand?: string | null
+      category?: string | null
+      confidence?: string
+    }>('/nutrition/recognize-product-text', { dish_name: dishName }),
+
   recognizeProductFromImage: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -505,6 +521,14 @@ export const analyticsAPI = {
       age: number
       activity_level: string
     }>('/analytics/tdee'),
+}
+
+// AI-тренер (история и очистка; стрим через fetch напрямую)
+export const coachAPI = {
+  getHistory: () =>
+    api.get<{ id: string; role: string; content: string; created_at: string }[]>('/coach/history'),
+
+  clearHistory: () => api.delete('/coach/history'),
 }
 
 export default api

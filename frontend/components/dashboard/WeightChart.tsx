@@ -90,12 +90,12 @@ export function WeightChart({
 
   if (data.length === 0) {
     return (
-      <Card className="h-full">
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle>График метрик тела</CardTitle>
           <CardDescription>Нет данных для отображения</CardDescription>
         </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground">
           Добавьте замеры в дневнике
         </CardContent>
       </Card>
@@ -104,12 +104,12 @@ export function WeightChart({
 
   if (!hasData) {
     return (
-      <Card className="h-full">
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle>График метрик тела</CardTitle>
           <CardDescription>Нет данных для выбранных метрик</CardDescription>
         </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground">
           Выберите метрики для отображения
         </CardContent>
       </Card>
@@ -117,19 +117,19 @@ export function WeightChart({
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle>Динамика метрик тела</CardTitle>
         <CardDescription>За последние 30 дней</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col overflow-hidden pt-0">
         {/* Фильтры метрик */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
           {(Object.keys(metricConfig) as MetricType[]).map((metric) => {
             const config = metricConfig[metric]
             const isSelected = selectedMetrics.has(metric)
             const hasDataForMetric = chartData.some(d => d[metric] != null)
-            
+
             return (
               <button
                 key={metric}
@@ -137,7 +137,7 @@ export function WeightChart({
                 onClick={() => toggleMetric(metric)}
                 disabled={!hasDataForMetric}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                  "px-2 py-1 rounded-md text-xs font-medium transition-all",
                   "focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed",
                   isSelected
                     ? "bg-primary text-primary-foreground"
@@ -151,32 +151,33 @@ export function WeightChart({
           })}
         </div>
 
-        <div className="h-[300px] w-full">
+        <div className="flex-1 min-h-0 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 40, right: 20, bottom: 50, left: 0 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }} 
-                tickMargin={10}
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                tickMargin={6}
                 style={{ fill: 'currentColor' }}
               />
-              <YAxis 
-                domain={['auto', 'auto']} 
-                tick={{ fontSize: 12 }}
+              <YAxis
+                domain={['auto', 'auto']}
+                tick={{ fontSize: 10 }}
+                width={45}
                 style={{ fill: 'currentColor' }}
               />
-              <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                labelStyle={{ color: '#6b7280', marginBottom: '0.5rem' }}
+              <Tooltip
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                labelStyle={{ color: '#6b7280', marginBottom: '0.25rem' }}
                 formatter={(value: number, name: string) => {
                   const metric = name as MetricType
                   const config = metricConfig[metric]
                   return [`${value}${config.unit}`, config.label]
                 }}
               />
-              <Legend 
-                wrapperStyle={{ paddingTop: '10px' }}
+              <Legend
+                wrapperStyle={{ paddingTop: '4px', fontSize: '11px' }}
                 iconType="line"
                 formatter={(value: string) => {
                   const metric = value as MetricType
@@ -185,51 +186,51 @@ export function WeightChart({
               />
               {/* Целевые линии */}
               {targetWeight && selectedMetrics.has('weight') && (
-                <ReferenceLine 
-                  y={targetWeight} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (вес)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetWeight}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {targetChest && selectedMetrics.has('chest') && (
-                <ReferenceLine 
-                  y={targetChest} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (грудь)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetChest}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {targetWaist && selectedMetrics.has('waist') && (
-                <ReferenceLine 
-                  y={targetWaist} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (талия)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetWaist}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {targetHips && selectedMetrics.has('hips') && (
-                <ReferenceLine 
-                  y={targetHips} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (бедра)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetHips}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {targetBiceps && selectedMetrics.has('biceps') && (
-                <ReferenceLine 
-                  y={targetBiceps} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (бицепс)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetBiceps}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {targetThigh && selectedMetrics.has('thigh') && (
-                <ReferenceLine 
-                  y={targetThigh} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (бедро)', position: 'right', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetThigh}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               

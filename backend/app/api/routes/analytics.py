@@ -1,6 +1,7 @@
 """
 API роутер для аналитики и прогнозов
 """
+import math
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -71,12 +72,39 @@ async def get_tdee(
     else:
         bmr = 10 * weight_metric.weight + 6.25 * profile.height - 5 * age - 161
     
+    # Расчёт % жира по формуле Navy (если есть обхват шеи и талии)
+    body_fat_pct = None
+    if weight_metric.neck and weight_metric.waist and profile.height:
+        try:
+            gender_val = profile.gender.value.lower() if profile.gender else "male"
+            if gender_val == "female" and weight_metric.hips:
+                # Женская формула: нужны талия, шея, бёдра, рост
+                body_fat_pct = round(
+                    495 / (1.29579 - 0.35004 * math.log10(weight_metric.waist + weight_metric.hips - weight_metric.neck)
+                           + 0.22100 * math.log10(profile.height)) - 450,
+                    1
+                )
+            else:
+                # Мужская формула: нужны талия, шея, рост
+                diff = weight_metric.waist - weight_metric.neck
+                if diff > 0:
+                    body_fat_pct = round(
+                        495 / (1.0324 - 0.19077 * math.log10(diff)
+                               + 0.15456 * math.log10(profile.height)) - 450,
+                        1
+                    )
+        except (ValueError, ZeroDivisionError):
+            body_fat_pct = None
+
     return {
         "bmr": round(bmr, 1),
         "tdee": round(tdee, 1),
         "weight_kg": weight_metric.weight,
         "height_cm": profile.height,
         "age": age,
-        "activity_level": profile.activity_level.value if profile.activity_level else "sedentary"
+        "activity_level": profile.activity_level.value if profile.activity_level else "sedentary",
+        "fitness_goal": profile.fitness_goal.value if profile.fitness_goal else None,
+        "experience_level": profile.experience_level.value if profile.experience_level else None,
+        "body_fat_pct": body_fat_pct,
     }
 

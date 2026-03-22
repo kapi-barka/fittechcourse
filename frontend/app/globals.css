@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    /* Темная тема по умолчанию */
-    --background: 222.2 47% 8%;
-    --foreground: 0 0% 98%;
-    --card: 222.2 47% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 222.2 47% 10%;
-    --popover-foreground: 0 0% 98%;
-    /* Красно-розовый акцент - приглушенный */
-    --primary: 340 45% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 222.2 32% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 222.2 32% 15%;
-    --muted-foreground: 215 20.2% 75%;
-    --accent: 340 40% 42%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 55% 50%;
+    /* Темная тема — глубокий фон, контрастный матовый акцент */
+    --background: 260 18% 5%;
+    --foreground: 0 0% 95%;
+    --card: 260 14% 8%;
+    --card-foreground: 0 0% 95%;
+    --popover: 260 14% 8%;
+    --popover-foreground: 0 0% 95%;
+    /* Cyan акцент — матовый, читаемый */
+    --primary: 185 38% 52%;
+    --primary-foreground: 260 18% 5%;
+    --secondary: 260 12% 14%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 260 12% 14%;
+    --muted-foreground: 260 8% 62%;
+    --accent: 185 30% 40%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 50% 48%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222.2 32% 20%;
-    --input: 222.2 32% 15%;
-    --ring: 340 45% 50%;
+    --border: 260 10% 18%;
+    --input: 260 12% 12%;
+    --ring: 185 38% 52%;
     --radius: 0.5rem;
   }
 }
@@ -66,25 +66,55 @@
   @apply transition-colors duration-200;
 }
 
-/* Glass morphism effect - темная тема */
+/* Glass morphism effect */
 .glass {
-  background: rgba(20, 20, 25, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 12, 20, 0.75);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient card */
+.card-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(260 12% 11%) 0%,
+    hsl(260 12% 9%) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Glow effect for primary elements */
+.glow-primary {
+  box-shadow: 0 0 24px hsl(185 38% 52% / 0.2), 0 0 48px hsl(185 38% 52% / 0.08);
 }
 
 /* Animations */
 @keyframes ken-burns {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.1);
-  }
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
 }
 
 .animate-ken-burns {
   animation: ken-burns 20s ease-out infinite alternate;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+@keyframes fade-in-fast {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-in-fast {
+  animation: fade-in-fast 0.2s ease-out both;
 }
 
 /* Article content styles */
@@ -131,6 +161,9 @@
 
 .article-content table {
   @apply w-full border-collapse mb-6;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .article-content table td,

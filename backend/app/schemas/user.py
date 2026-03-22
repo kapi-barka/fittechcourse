@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime, date
 from uuid import UUID
-from app.models.user import UserRole, ActivityLevel, Gender
+from app.models.user import UserRole, ActivityLevel, Gender, FitnessGoal, ExperienceLevel
 
 
 # ============ Аутентификация ============
@@ -75,6 +75,8 @@ class UserProfileCreate(BaseModel):
     target_biceps: Optional[float] = Field(None, ge=15, le=80, description="Целевой обхват бицепса в см (от 15 до 80)")
     target_thigh: Optional[float] = Field(None, ge=30, le=150, description="Целевой обхват бедра в см (от 30 до 150)")
     activity_level: Optional[ActivityLevel] = ActivityLevel.SEDENTARY
+    fitness_goal: Optional[FitnessGoal] = None
+    experience_level: Optional[ExperienceLevel] = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -95,6 +97,8 @@ class UserProfileUpdate(BaseModel):
     target_biceps: Optional[float] = Field(None, ge=15, le=80)
     target_thigh: Optional[float] = Field(None, ge=30, le=150)
     activity_level: Optional[ActivityLevel] = None
+    fitness_goal: Optional[FitnessGoal] = None
+    experience_level: Optional[ExperienceLevel] = None
     avatar_url: Optional[str] = None
 
 
@@ -117,6 +121,8 @@ class UserProfileResponse(BaseModel):
     target_biceps: Optional[float] = None
     target_thigh: Optional[float] = None
     activity_level: Optional[ActivityLevel] = None
+    fitness_goal: Optional[FitnessGoal] = None
+    experience_level: Optional[ExperienceLevel] = None
     current_program_id: Optional[UUID] = None
     current_program_start_date: Optional[date] = None
     avatar_url: Optional[str] = None

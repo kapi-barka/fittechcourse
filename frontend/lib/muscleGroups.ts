@@ -141,6 +141,53 @@ export function normalizeMuscleGroup(muscleGroup: string): StandardMuscleGroup |
 }
 
 /**
+ * Переводы названий групп мышц на русский язык.
+ * Покрывает как стандартные ключи, так и сырые значения из БД.
+ */
+export const MUSCLE_GROUP_LABELS: Record<string, string> = {
+  // Стандартные ключи
+  'chest': 'Грудь',
+  'lats': 'Широчайшие',
+  'lowerback': 'Поясница',
+  'quads': 'Квадрицепсы',
+  'hamstrings': 'Бицепс бедра',
+  'calves': 'Икры',
+  'glutes': 'Ягодицы',
+  'shoulders': 'Плечи',
+  'rear-shoulders': 'Задние дельты',
+  'triceps': 'Трицепс',
+  'biceps': 'Бицепс',
+  'abdominals': 'Пресс',
+  'obliques': 'Косые мышцы',
+  'traps': 'Трапеции',
+  'traps-middle': 'Средняя трапеция',
+  'forearms': 'Предплечья',
+  'hands': 'Руки',
+  // Сырые значения из БД
+  'back': 'Спина',
+  'legs': 'Ноги',
+  'arms': 'Руки',
+  'abs': 'Пресс',
+  'quadriceps': 'Квадрицепсы',
+  'hamstring': 'Бицепс бедра',
+}
+
+/**
+ * Переводит название группы мышц на русский.
+ * Если перевод не найден — возвращает оригинальное значение.
+ */
+export function translateMuscleGroup(name: string): string {
+  return MUSCLE_GROUP_LABELS[name.toLowerCase()] ?? name
+}
+
+/**
+ * Переводит массив групп мышц и объединяет в строку через разделитель.
+ */
+export function translateMuscleGroups(names: string[], separator = ', '): string {
+  return names.map(translateMuscleGroup).join(separator)
+}
+
+/**
  * Преобразует строку с группами мышц (через запятую) в массив стандартных названий
  */
 export function parseMuscleGroupsString(muscleGroupsString: string): StandardMuscleGroup[] {

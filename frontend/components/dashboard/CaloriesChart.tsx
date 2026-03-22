@@ -94,12 +94,12 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <Card className="h-full">
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle>График питания</CardTitle>
           <CardDescription>Нет данных для отображения</CardDescription>
         </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground">
           Начните вести дневник питания
         </CardContent>
       </Card>
@@ -108,12 +108,12 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
 
   if (!hasData) {
     return (
-      <Card className="h-full">
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle>График питания</CardTitle>
           <CardDescription>Нет данных для выбранных метрик</CardDescription>
         </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
+        <CardContent className="flex-1 flex items-center justify-center text-muted-foreground">
           Выберите метрики для отображения
         </CardContent>
       </Card>
@@ -121,19 +121,19 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle>Потребление КБЖУ</CardTitle>
         <CardDescription>Последние 7 активных дней</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col overflow-hidden pt-0">
         {/* Фильтры метрик */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
           {(Object.keys(nutritionConfig) as NutritionType[]).map((metric) => {
             const config = nutritionConfig[metric]
             const isSelected = selectedMetrics.has(metric)
             const hasDataForMetric = chartData.some(d => d[metric] != null && d[metric] > 0)
-            
+
             return (
               <button
                 key={metric}
@@ -141,7 +141,7 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
                 onClick={() => toggleMetric(metric)}
                 disabled={!hasDataForMetric}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                  "px-2 py-1 rounded-md text-xs font-medium transition-all",
                   "focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed",
                   isSelected
                     ? "text-white"
@@ -155,45 +155,46 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
           })}
         </div>
 
-        <div className="h-[300px] w-full">
+        <div className="flex-1 min-h-0 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 40, right: 20, bottom: 50, left: 0 }}>
+            <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }} 
-                tickMargin={10}
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                tickMargin={6}
                 axisLine={false}
                 tickLine={false}
                 style={{ fill: 'currentColor' }}
               />
-              <YAxis 
-                tick={{ fontSize: 12 }}
+              <YAxis
+                tick={{ fontSize: 10 }}
+                width={50}
                 style={{ fill: 'currentColor' }}
               />
-              <Tooltip 
+              <Tooltip
                 cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                labelStyle={{ color: '#6b7280', marginBottom: '0.5rem' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                labelStyle={{ color: '#6b7280', marginBottom: '0.25rem' }}
                 formatter={(value: number, name: string) => {
                   const metric = name as NutritionType
                   const config = nutritionConfig[metric]
                   return [`${value}${config.unit}`, config.label]
                 }}
               />
-              <Legend 
-                wrapperStyle={{ paddingTop: '10px' }}
+              <Legend
+                wrapperStyle={{ paddingTop: '4px', fontSize: '11px' }}
                 formatter={(value: string) => {
                   const metric = value as NutritionType
                   return nutritionConfig[metric]?.label || value
                 }}
               />
               {targetCalories && selectedMetrics.has('calories') && (
-                <ReferenceLine 
-                  y={targetCalories} 
-                  stroke="#10b981" 
-                  strokeDasharray="3 3" 
-                  label={{ value: 'Цель (калории)', position: 'insideTopRight', fill: '#10b981', fontSize: 12 }} 
+                <ReferenceLine
+                  y={targetCalories}
+                  stroke="#10b981"
+                  strokeDasharray="3 3"
+                  label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
               {selectedMetrics.has('calories') && (

@@ -26,6 +26,7 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
     hips: '',
     biceps: '',
     thigh: '',
+    neck: '',
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -38,6 +39,7 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
         hips: metric.hips?.toString() || '',
         biceps: metric.biceps?.toString() || '',
         thigh: metric.thigh?.toString() || '',
+        neck: metric.neck?.toString() || '',
       })
     }
   }, [metric])
@@ -61,6 +63,7 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
       if (formData.hips) updateData.hips = parseFloat(formData.hips)
       if (formData.biceps) updateData.biceps = parseFloat(formData.biceps)
       if (formData.thigh) updateData.thigh = parseFloat(formData.thigh)
+      if (formData.neck) updateData.neck = parseFloat(formData.neck)
 
       await metricsAPI.update(metric.id, updateData)
       onSuccess()
@@ -162,18 +165,34 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Бедро (см)</label>
-            <Input
-              type="number"
-              name="thigh"
-              value={formData.thigh}
-              onChange={handleChange}
-              placeholder="60"
-              step="0.1"
-              min="30"
-              max="150"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Бедро (см)</label>
+              <Input
+                type="number"
+                name="thigh"
+                value={formData.thigh}
+                onChange={handleChange}
+                placeholder="60"
+                step="0.1"
+                min="30"
+                max="150"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Шея (см)</label>
+              <Input
+                type="number"
+                name="neck"
+                value={formData.neck}
+                onChange={handleChange}
+                placeholder="38"
+                step="0.1"
+                min="20"
+                max="60"
+              />
+              <p className="text-xs text-muted-foreground">Для расчёта % жира</p>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">

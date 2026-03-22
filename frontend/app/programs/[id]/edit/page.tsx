@@ -249,7 +249,7 @@ export default function EditProgramPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
 
         <main className="container mx-auto px-4 py-8">
           {/* Заголовок */}
@@ -263,7 +263,7 @@ export default function EditProgramPage() {
               Назад
             </Button>
 
-            <h1 className="text-4xl font-extrabold mb-2 text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 text-gray-900 dark:text-gray-100">
               Редактировать программу
             </h1>
             <p className="text-muted-foreground font-medium">
@@ -289,7 +289,7 @@ export default function EditProgramPage() {
 
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/5">
                   {imageUrl ? (
-                    <div className="relative w-full max-w-md h-48 rounded-lg overflow-hidden mb-4">
+                    <div className="relative w-full max-w-full sm:max-w-md h-36 sm:h-48 rounded-lg overflow-hidden mb-4">
                       <Image
                         src={imageUrl}
                         alt="Program cover"
@@ -417,7 +417,7 @@ export default function EditProgramPage() {
                   <label className="block text-sm font-medium mb-2">
                     Целевые группы мышц
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 border rounded-md bg-muted/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-4 border rounded-md bg-muted/10">
                     {MUSCLE_GROUPS.map(muscle => (
                       <label key={muscle.id} className="flex items-center space-x-2 cursor-pointer">
                         <input

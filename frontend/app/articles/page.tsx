@@ -48,7 +48,7 @@ export default function ArticlesPage() {
     <AuthGuard>
       <div className="min-h-screen">
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-4 sm:py-8">
           {/* Поиск */}
           <div className="mb-8">
             <div className="relative max-w-md">
@@ -79,12 +79,12 @@ export default function ArticlesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredArticles.map((article) => (
                 <Link key={article.id} href={`/articles/${article.id}`}>
                   <Card className="hover:shadow-lg transition-all cursor-pointer h-full border-0">
                     {article.cover_image_url && (
-                      <div className="h-48 overflow-hidden rounded-t-lg">
+                      <div className="h-36 sm:h-48 overflow-hidden rounded-t-lg">
                         <Image
                           src={article.cover_image_url}
                           alt={article.title}

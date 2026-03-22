@@ -102,7 +102,7 @@ export function TDEECalculator() {
       <CardContent className="space-y-3">
         {/* Основные показатели */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="p-3 bg-primary/10 rounded-lg">
             <div className="text-xs text-muted-foreground mb-0.5">BMR</div>
             <div className="text-xl font-bold">{tdeeData.bmr.toFixed(0)}</div>
             <div className="text-xs text-muted-foreground">ккал/день</div>

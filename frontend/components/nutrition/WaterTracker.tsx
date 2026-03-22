@@ -102,7 +102,7 @@ export function WaterTracker() {
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
               <div
-                className="bg-blue-500 h-full transition-all duration-300 rounded-full"
+                className="bg-primary h-full transition-all duration-300 rounded-full"
                 style={{ width: `${Math.min(hydration.percentage, 100)}%` }}
               />
             </div>
@@ -115,7 +115,7 @@ export function WaterTracker() {
         {/* Быстрые кнопки */}
         <div>
           <label className="block text-sm font-medium mb-2">Быстрый выбор (мл)</label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {quickAmounts.map((quickAmount) => (
               <Button
                 key={quickAmount}

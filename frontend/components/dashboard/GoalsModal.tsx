@@ -178,92 +178,98 @@ export function GoalsModal({ isOpen, onClose }: GoalsModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
             Мои цели
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Целевой вес (кг)</label>
-            <Input
-              type="number"
-              name="target_weight"
-              value={formData.target_weight}
-              onChange={handleChange}
-              placeholder="70.5"
-              step="0.1"
-              min="20"
-              max="300"
-            />
-            <p className="text-xs text-muted-foreground">От 20 до 300 кг</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Калории в день (ккал)</label>
-            <Input
-              type="number"
-              name="target_calories"
-              value={formData.target_calories}
-              onChange={handleChange}
-              placeholder="2000"
-              min="800"
-              max="8000"
-            />
-            <p className="text-xs text-muted-foreground">От 800 до 8000 ккал/день</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Белки в день (г)</label>
-            <Input
-              type="number"
-              name="target_proteins"
-              value={formData.target_proteins}
-              onChange={handleChange}
-              placeholder="150"
-              step="0.1"
-              min="0"
-              max="500"
-            />
-            <p className="text-xs text-muted-foreground">От 0 до 500 г/день</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Жиры в день (г)</label>
-            <Input
-              type="number"
-              name="target_fats"
-              value={formData.target_fats}
-              onChange={handleChange}
-              placeholder="65"
-              step="0.1"
-              min="0"
-              max="500"
-            />
-            <p className="text-xs text-muted-foreground">От 0 до 500 г/день</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Углеводы в день (г)</label>
-            <Input
-              type="number"
-              name="target_carbs"
-              value={formData.target_carbs}
-              onChange={handleChange}
-              placeholder="250"
-              step="0.1"
-              min="0"
-              max="1000"
-            />
-            <p className="text-xs text-muted-foreground">От 0 до 1000 г/день</p>
-          </div>
-
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-sm font-semibold mb-4">Целевые замеры тела</h3>
-            
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8 gap-y-4">
+            {/* Левая колонка: вес и питание */}
             <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Вес и питание</h3>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Целевой вес (кг)</label>
+                <Input
+                  type="number"
+                  name="target_weight"
+                  value={formData.target_weight}
+                  onChange={handleChange}
+                  placeholder="70.5"
+                  step="0.1"
+                  min="20"
+                  max="300"
+                />
+                <p className="text-xs text-muted-foreground">От 20 до 300 кг</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Калории в день (ккал)</label>
+                <Input
+                  type="number"
+                  name="target_calories"
+                  value={formData.target_calories}
+                  onChange={handleChange}
+                  placeholder="2000"
+                  min="800"
+                  max="8000"
+                />
+                <p className="text-xs text-muted-foreground">От 800 до 8000 ккал/день</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Белки в день (г)</label>
+                <Input
+                  type="number"
+                  name="target_proteins"
+                  value={formData.target_proteins}
+                  onChange={handleChange}
+                  placeholder="150"
+                  step="0.1"
+                  min="0"
+                  max="500"
+                />
+                <p className="text-xs text-muted-foreground">От 0 до 500 г/день</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Жиры в день (г)</label>
+                <Input
+                  type="number"
+                  name="target_fats"
+                  value={formData.target_fats}
+                  onChange={handleChange}
+                  placeholder="65"
+                  step="0.1"
+                  min="0"
+                  max="500"
+                />
+                <p className="text-xs text-muted-foreground">От 0 до 500 г/день</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Углеводы в день (г)</label>
+                <Input
+                  type="number"
+                  name="target_carbs"
+                  value={formData.target_carbs}
+                  onChange={handleChange}
+                  placeholder="250"
+                  step="0.1"
+                  min="0"
+                  max="1000"
+                />
+                <p className="text-xs text-muted-foreground">От 0 до 1000 г/день</p>
+              </div>
+            </div>
+
+            {/* Правая колонка: замеры тела */}
+            <div className="space-y-4 sm:border-l sm:pl-8 border-t pt-4 sm:border-t-0 sm:pt-0">
+              <h3 className="text-sm font-semibold">Замеры тела</h3>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Обхват груди (см)</label>
                 <Input
@@ -341,7 +347,7 @@ export function GoalsModal({ isOpen, onClose }: GoalsModalProps) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-6 mt-2 border-t">
             <Button type="button" variant="outline" onClick={() => onClose(false)} disabled={isLoading}>
               Отмена
             </Button>

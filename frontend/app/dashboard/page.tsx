@@ -5,30 +5,149 @@
 
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { metricsAPI, nutritionAPI, usersAPI, BodyMetric, NutritionLog } from '@/lib/api'
+import { metricsAPI, nutritionAPI, analyticsAPI, BodyMetric, NutritionLog } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { WeightChart } from '@/components/dashboard/WeightChart'
 import { CaloriesChart } from '@/components/dashboard/CaloriesChart'
-import { TDEECalculator } from '@/components/analytics/TDEECalculator'
 import { GoalsModal } from '@/components/dashboard/GoalsModal'
 import {
-  TrendingUp,
   Flame,
-  Dumbbell,
-  Apple,
   Target,
   ArrowRight,
-  Sparkles,
-  Loader2,
-  RefreshCw,
   Scale,
-  Ruler
+  Ruler,
+  Zap,
+  Activity,
+  Dumbbell,
 } from 'lucide-react'
 import Link from 'next/link'
 import { subDays, format } from 'date-fns'
+import { ru } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
+// ── Calorie Ring (SVG) ──────────────────────────────────────────────
+function CalorieRing({
+  consumed,
+  target,
+  size = 100,
+}: {
+  consumed: number
+  target: number
+  size?: number
+}) {
+  const r = (size - 12) / 2
+  const circ = 2 * Math.PI * r
+  const pct = target > 0 ? Math.min(consumed / target, 1) : 0
+  const dash = pct * circ
+
+  return (
+    <svg width={size} height={size} className="shrink-0 -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor"
+        strokeWidth={8} className="text-white/8" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke="hsl(var(--primary))" strokeWidth={8}
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+        style={{ transition: 'stroke-dasharray 0.6s ease' }}
+      />
+    </svg>
+  )
+}
+
+// ── Macro Bar ───────────────────────────────────────────────────────
+function MacroBar({
+  label,
+  value,
+  target,
+  color,
+}: {
+  label: string
+  value: number
+  target: number
+  color: string
+}) {
+  const pct = target > 0 ? Math.min((value / target) * 100, 100) : 0
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{Math.round(value)}<span className="text-muted-foreground">/{target}г</span></span>
+      </div>
+      <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── Stat Chip ───────────────────────────────────────────────────────
+function StatChip({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  accent,
+}: {
+  label: string
+  value: string
+  sub?: string
+  icon: React.ElementType
+  accent: string
+}) {
+  return (
+    <div className={cn(
+      'flex items-center gap-3 rounded-xl border border-white/8 bg-card/60 px-4 py-3',
+    )}>
+      <div className={cn('flex items-center justify-center w-9 h-9 rounded-lg shrink-0', accent)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        <p className="text-sm font-bold leading-tight">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
+      </div>
+    </div>
+  )
+}
+
+// ── Measurement Row ─────────────────────────────────────────────────
+function MeasurementRow({
+  label,
+  value,
+  target,
+}: {
+  label: string
+  value: number
+  target?: number | null
+}) {
+  const pct = target && target > 0 ? Math.min((value / target) * 100, 100) : null
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">
+          {value}
+          {target ? <span className="text-muted-foreground"> / {target} см</span> : ' см'}
+        </span>
+      </div>
+      {pct !== null && (
+        <div className="h-1 bg-white/8 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main Page ───────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const [latestMetric, setLatestMetric] = useState<BodyMetric | null>(null)
@@ -38,10 +157,12 @@ export default function DashboardPage() {
   const [todayCarbs, setTodayCarbs] = useState(0)
   const [weightHistory, setWeightHistory] = useState<BodyMetric[]>([])
   const [nutritionHistory, setNutritionHistory] = useState<NutritionLog[]>([])
+  const [tdeeData, setTdeeData] = useState<{
+    bmr: number; tdee: number; activity_level: string
+    fitness_goal?: string | null
+    body_fat_pct?: number | null
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [dailyAdvice, setDailyAdvice] = useState<string>('')
-  const [isLoadingAdvice, setIsLoadingAdvice] = useState(true)
-  const [adviceError, setAdviceError] = useState<string | null>(null)
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
 
   const fetchData = async () => {
@@ -49,552 +170,290 @@ export default function DashboardPage() {
     const thirtyDaysAgo = subDays(today, 30)
     const sevenDaysAgo = subDays(today, 7)
 
-    try {
-      // Получаем последние замеры
-      const metricsRes = await metricsAPI.latest()
-      if (metricsRes.data) {
-        setLatestMetric(metricsRes.data)
-      }
-    } catch {
-      // Нет замеров
-    }
-
-    try {
-      // Получаем историю веса за 30 дней
-      const metricsHistoryRes = await metricsAPI.list({
-        from_date: format(thirtyDaysAgo, 'yyyy-MM-dd')
-      })
-      setWeightHistory(metricsHistoryRes.data)
-    } catch (error) {
-      console.error('Failed to fetch weight history', error)
-    }
-
-    try {
-      // Получаем калории и макронутриенты за сегодня
-      const nutritionRes = await nutritionAPI.getDailySummary()
-      setTodayCalories(nutritionRes.data.total_calories || 0)
-      setTodayProteins(nutritionRes.data.total_proteins || 0)
-      setTodayFats(nutritionRes.data.total_fats || 0)
-      setTodayCarbs(nutritionRes.data.total_carbs || 0)
-    } catch {
-      // Нет записей
-    }
-
-    try {
-      // Получаем историю питания за 7 дней для графика
-      const nutritionHistoryRes = await nutritionAPI.listLogs({
-        from_date: format(sevenDaysAgo, 'yyyy-MM-dd')
-      })
-      setNutritionHistory(nutritionHistoryRes.data)
-    } catch (error) {
-      console.error('Failed to fetch nutrition history', error)
-    }
+    await Promise.allSettled([
+      metricsAPI.latest().then(r => setLatestMetric(r.data)).catch(() => {}),
+      metricsAPI.list({ from_date: format(thirtyDaysAgo, 'yyyy-MM-dd') }).then(r => setWeightHistory(r.data)).catch(() => {}),
+      nutritionAPI.getDailySummary().then(r => {
+        setTodayCalories(r.data.total_calories || 0)
+        setTodayProteins(r.data.total_proteins || 0)
+        setTodayFats(r.data.total_fats || 0)
+        setTodayCarbs(r.data.total_carbs || 0)
+      }).catch(() => {}),
+      nutritionAPI.listLogs({ from_date: format(sevenDaysAgo, 'yyyy-MM-dd') }).then(r => setNutritionHistory(r.data)).catch(() => {}),
+      analyticsAPI.getTDEE().then(r => setTdeeData(r.data)).catch(() => {}),
+    ])
 
     setIsLoading(false)
   }
 
-  const fetchAdvice = async () => {
-    setIsLoadingAdvice(true)
-    setAdviceError(null)
-    try {
-      const adviceRes = await usersAPI.getDailyAdvice()
-      setDailyAdvice(adviceRes.data.advice)
-      setAdviceError(null)
-    } catch (error: unknown) {
-      console.error('Failed to fetch daily advice', error)
-      const axiosError = error as { response?: { status?: number; data?: { detail?: string } } }
-      
-      if (axiosError.response?.status === 503) {
-        setAdviceError('Сервис советов временно недоступен')
-        setDailyAdvice('Продолжай следить за своим питанием и тренировками. Каждый день - это шаг к твоей цели!')
-      } else {
-        setAdviceError('Не удалось загрузить совет')
-        setDailyAdvice('Продолжай следить за своим питанием и тренировками. Каждый день - это шаг к твоей цели!')
-      }
-    } finally {
-      setIsLoadingAdvice(false)
-    }
-  }
-
   useEffect(() => {
     fetchData()
-    fetchAdvice()
-
-    // Обновляем данные при возврате фокуса на страницу
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchData()
-        fetchAdvice() // Обновляем совет при возврате на страницу
-      }
-    }
-
-    // Обновляем данные при возврате на страницу через Next.js
-    const handleFocus = () => {
-      fetchData()
-      fetchAdvice() // Обновляем совет при возврате на страницу
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-
+    const onVisible = () => { if (!document.hidden) fetchData() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', fetchData)
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', fetchData)
     }
   }, [])
 
-  // Вычисляем прогресс для визуализации
-  const weightProgress = user?.profile?.target_weight && latestMetric?.weight
-    ? Math.min(100, Math.max(0, (latestMetric.weight / user.profile.target_weight) * 100))
-    : null
+  const profile = user?.profile
+  const greeting = (() => {
+    const h = new Date().getHours()
+    if (h < 6)  return 'Доброй ночи'
+    if (h < 12) return 'Доброе утро'
+    if (h < 18) return 'Добрый день'
+    return 'Добрый вечер'
+  })()
+  const firstName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
 
-  const caloriesProgress = user?.profile?.target_calories
-    ? Math.min(100, Math.max(0, (todayCalories / user.profile.target_calories) * 100))
-    : null
+  const activityLabels: Record<string, string> = {
+    sedentary: 'Сидячий',
+    lightly_active: 'Легкая',
+    moderately_active: 'Умеренная',
+    very_active: 'Высокая',
+    extremely_active: 'Очень высокая',
+  }
 
-  const proteinsProgress = user?.profile?.target_proteins
-    ? Math.min(100, Math.max(0, (todayProteins / user.profile.target_proteins) * 100))
-    : null
-
-  const fatsProgress = user?.profile?.target_fats
-    ? Math.min(100, Math.max(0, (todayFats / user.profile.target_fats) * 100))
-    : null
-
-  const carbsProgress = user?.profile?.target_carbs
-    ? Math.min(100, Math.max(0, (todayCarbs / user.profile.target_carbs) * 100))
-    : null
-
-  const quickActions = [
-    {
-      title: 'Программы тренировок',
-      description: 'Просмотри или создай программу',
-      icon: Dumbbell,
-      href: '/programs',
-      color: 'bg-primary'
-    },
-    {
-      title: 'Дневник питания',
-      description: 'Отслеживай свое питание',
-      icon: Apple,
-      href: '/diary?tab=nutrition',
-      color: 'bg-primary'
-    },
-    {
-      title: 'Замеры тела',
-      description: 'Добавь новые замеры',
-      icon: TrendingUp,
-      href: '/diary?tab=metrics',
-      color: 'bg-primary'
-    },
-  ]
-
-  // const backgroundImages = [
-  //   '/dashboard-bg.jpg',
-  //   '/dashboard-bg-2.jpg'
-  // ]
+  const goalLabels: Record<string, string> = {
+    lose_fat: 'Похудение',
+    gain_muscle: 'Набор массы',
+    recomposition: 'Рекомпозиция',
+    maintain: 'Поддержание',
+  }
 
   return (
     <AuthGuard>
       <div className="min-h-screen">
+        <main className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
 
-        <main className="container mx-auto px-4 py-8">
-          {/* Ежедневный совет от ИИ */}
-          <div className="mb-6">
-            <Card className="bg-primary/10 border-primary/30">
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    {isLoadingAdvice ? (
-                      <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Генерирую персональный совет...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-sm leading-relaxed">{dailyAdvice}</p>
-                        {adviceError && (
-                          <p className="text-xs text-muted-foreground mt-2">{adviceError}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    onClick={fetchAdvice}
-                    disabled={isLoadingAdvice}
-                    title="Обновить совет"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${isLoadingAdvice ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* ── Greeting ─────────────────────────────── */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold leading-tight">
+                {greeting}{firstName ? `, ${firstName}` : ''}!
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {format(new Date(), 'EEEE, d MMMM', { locale: ru })}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs shrink-0"
+              onClick={() => setIsGoalsModalOpen(true)}
+            >
+              <Target className="h-3 w-3 mr-1.5" />
+              Изменить цели
+            </Button>
           </div>
 
-          {/* Компактная статистика */}
-          <div className="mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-              {/* Секция: Питание */}
-              {(user?.profile?.target_calories || user?.profile?.target_proteins || user?.profile?.target_fats || user?.profile?.target_carbs) && (
-                <Link href="/diary?tab=nutrition">
-                  <Card className="hover:shadow-lg transition-all cursor-pointer border bg-primary/10 border-primary/30 h-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Flame className="h-5 w-5 text-primary" />
-                          <CardTitle className="text-lg">Питание</CardTitle>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Калории */}
-                      {user?.profile?.target_calories && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Калории</span>
-                            <span className="text-xs text-muted-foreground">
-                              {caloriesProgress !== null ? `${Math.round(caloriesProgress)}%` : '—'}
-                            </span>
-                          </div>
-                          <div className="flex items-baseline space-x-2 mb-1">
-                            <span className="text-xl font-bold text-primary">
-                          {isLoading ? '...' : Math.round(todayCalories)}
-                        </span>
-                            <span className="text-sm text-muted-foreground">/ {user.profile.target_calories} ккал</span>
-                      </div>
-                      {caloriesProgress !== null && (
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${caloriesProgress}%` }}
-                          />
-                        </div>
-                      )}
-                        </div>
-                      )}
-
-                      {/* Макронутриенты в одну строку */}
-                      {((user?.profile?.target_proteins && user.profile.target_proteins > 0) || 
-                        (user?.profile?.target_fats && user.profile.target_fats > 0) || 
-                        (user?.profile?.target_carbs && user.profile.target_carbs > 0)) && (
-                        <div className="grid grid-cols-3 gap-3 pt-2 border-t">
-                          {user?.profile?.target_proteins && user.profile.target_proteins > 0 && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-muted-foreground">Белки</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {proteinsProgress !== null ? `${Math.round(proteinsProgress)}%` : '—'}
-                                </span>
-                      </div>
-                              <div className="text-sm font-semibold text-primary">
-                                {Math.round(todayProteins)} / {user.profile.target_proteins}г
-                      </div>
-                      {proteinsProgress !== null && (
-                                <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${proteinsProgress}%` }}
-                          />
-                        </div>
-                      )}
-                            </div>
-                )}
-
-                          {user?.profile?.target_fats && user.profile.target_fats > 0 && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-muted-foreground">Жиры</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {fatsProgress !== null ? `${Math.round(fatsProgress)}%` : '—'}
-                                </span>
-                        </div>
-                              <div className="text-sm font-semibold text-primary">
-                                {Math.round(todayFats)} / {user.profile.target_fats}г
-                      </div>
-                      {fatsProgress !== null && (
-                                <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${fatsProgress}%` }}
-                          />
-                        </div>
-                      )}
-                            </div>
-                )}
-
-                          {user?.profile?.target_carbs && user.profile.target_carbs > 0 && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-muted-foreground">Углеводы</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {carbsProgress !== null ? `${Math.round(carbsProgress)}%` : '—'}
-                                </span>
-                        </div>
-                              <div className="text-sm font-semibold text-primary">
-                                {Math.round(todayCarbs)} / {user.profile.target_carbs}г
-                      </div>
-                      {carbsProgress !== null && (
-                                <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${carbsProgress}%` }}
-                          />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
+          {/* ── TDEE / BMR Chips ─────────────────────── */}
+          {(tdeeData || latestMetric?.weight) && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+              {tdeeData && (
+                <>
+                  <StatChip
+                    label="BMR"
+                    value={`${Math.round(tdeeData.bmr)} ккал`}
+                    sub="базовый обмен"
+                    icon={Activity}
+                    accent="bg-blue-500/15 text-blue-400"
+                  />
+                  <StatChip
+                    label="TDEE"
+                    value={`${Math.round(tdeeData.tdee)} ккал`}
+                    sub="с учётом активности"
+                    icon={Zap}
+                    accent="bg-emerald-500/15 text-emerald-400"
+                  />
+                  <StatChip
+                    label="Активность"
+                    value={activityLabels[tdeeData.activity_level] || tdeeData.activity_level}
+                    icon={Flame}
+                    accent="bg-orange-500/15 text-orange-400"
+                  />
+                  {tdeeData.fitness_goal && (
+                    <StatChip
+                      label="Цель"
+                      value={goalLabels[tdeeData.fitness_goal] || tdeeData.fitness_goal}
+                      icon={Dumbbell}
+                      accent="bg-pink-500/15 text-pink-400"
+                    />
+                  )}
+                  {tdeeData.body_fat_pct !== null && tdeeData.body_fat_pct !== undefined && (
+                    <StatChip
+                      label="Жир тела"
+                      value={`${tdeeData.body_fat_pct}%`}
+                      sub="Navy formula"
+                      icon={Activity}
+                      accent="bg-cyan-500/15 text-cyan-400"
+                    />
+                  )}
+                </>
               )}
+              {latestMetric?.weight && (
+                <StatChip
+                  label="Вес"
+                  value={`${latestMetric.weight} кг`}
+                  sub={profile?.target_weight ? `цель: ${profile.target_weight} кг` : undefined}
+                  icon={Scale}
+                  accent="bg-violet-500/15 text-violet-400"
+                />
+              )}
+            </div>
+          )}
 
-              {/* Секция: Замеры тела */}
-              <Link href="/diary?tab=metrics">
-                <Card className="hover:shadow-lg transition-all cursor-pointer border bg-primary/10 border-primary/30 h-full">
+          {/* ── Main Cards Row ────────────────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            {/* Питание */}
+            {(profile?.target_calories || profile?.target_proteins || profile?.target_fats || profile?.target_carbs) && (
+              <Link href="/diary?tab=nutrition" className="group">
+                <Card className="h-full border-white/8 bg-card/60 hover:bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Ruler className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">Замеры тела</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-400" />
+                        <CardTitle className="text-base">Питание сегодня</CardTitle>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Вес */}
-                    {user?.profile?.target_weight && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                            <Scale className="h-3.5 w-3.5" />
-                            Вес
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {weightProgress !== null ? `${Math.round(weightProgress)}%` : '—'}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline space-x-2 mb-1">
-                          <span className="text-xl font-bold text-primary">
-                            {isLoading ? '...' : (latestMetric?.weight ? `${latestMetric.weight}` : '—')}
-                          </span>
-                          <span className="text-sm text-muted-foreground">/ {user.profile.target_weight} кг</span>
-                        </div>
-                        {weightProgress !== null && (
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ width: `${weightProgress}%` }}
-                            />
+                  <CardContent className="space-y-5">
+                    {/* Ring + calories */}
+                    {profile?.target_calories && (
+                      <div className="flex items-center gap-4">
+                        <div className="relative shrink-0">
+                          <CalorieRing
+                            consumed={todayCalories}
+                            target={profile.target_calories}
+                            size={88}
+                          />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-base font-bold leading-none">
+                              {isLoading ? '…' : Math.round(todayCalories)}
+                            </span>
+                            <span className="text-[9px] text-muted-foreground">ккал</span>
                           </div>
-                        )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">Из {profile.target_calories} ккал</p>
+                          <p className="text-lg font-bold mt-0.5">
+                            {profile.target_calories - Math.round(todayCalories) > 0
+                              ? `ещё ${profile.target_calories - Math.round(todayCalories)} ккал`
+                              : 'цель выполнена!'
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {Math.round((todayCalories / profile.target_calories) * 100)}% от дневной нормы
+                          </p>
+                        </div>
                       </div>
                     )}
 
-                    {/* Остальные замеры с прогрессом к целям */}
-                    <div className="space-y-3 pt-2 border-t">
-                      {user?.profile?.target_chest && latestMetric?.chest && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Грудь</span>
-                            <span className="text-xs text-muted-foreground">
-                              {latestMetric.chest} / {user.profile.target_chest} см
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, Math.max(0, (latestMetric.chest / user.profile.target_chest) * 100))}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {user?.profile?.target_waist && latestMetric?.waist && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Талия</span>
-                            <span className="text-xs text-muted-foreground">
-                              {latestMetric.waist} / {user.profile.target_waist} см
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, Math.max(0, (latestMetric.waist / user.profile.target_waist) * 100))}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {user?.profile?.target_hips && latestMetric?.hips && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Бедра</span>
-                            <span className="text-xs text-muted-foreground">
-                              {latestMetric.hips} / {user.profile.target_hips} см
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, Math.max(0, (latestMetric.hips / user.profile.target_hips) * 100))}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {user?.profile?.target_biceps && latestMetric?.biceps && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Бицепс</span>
-                            <span className="text-xs text-muted-foreground">
-                              {latestMetric.biceps} / {user.profile.target_biceps} см
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, Math.max(0, (latestMetric.biceps / user.profile.target_biceps) * 100))}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {user?.profile?.target_thigh && latestMetric?.thigh && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-sm font-medium text-muted-foreground">Бедро</span>
-                            <span className="text-xs text-muted-foreground">
-                              {latestMetric.thigh} / {user.profile.target_thigh} см
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, Math.max(0, (latestMetric.thigh / user.profile.target_thigh) * 100))}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Замеры без целей */}
-                      {(!user?.profile?.target_chest || !latestMetric?.chest) && latestMetric?.chest && (
-                        <div className="text-xs text-muted-foreground">
-                          Грудь: <span className="font-semibold text-primary">{latestMetric.chest} см</span>
-                        </div>
-                      )}
-                      {(!user?.profile?.target_waist || !latestMetric?.waist) && latestMetric?.waist && (
-                        <div className="text-xs text-muted-foreground">
-                          Талия: <span className="font-semibold text-primary">{latestMetric.waist} см</span>
-                        </div>
-                      )}
-                      {(!user?.profile?.target_hips || !latestMetric?.hips) && latestMetric?.hips && (
-                        <div className="text-xs text-muted-foreground">
-                          Бедра: <span className="font-semibold text-primary">{latestMetric.hips} см</span>
-                        </div>
-                      )}
-                      {(!user?.profile?.target_biceps || !latestMetric?.biceps) && latestMetric?.biceps && (
-                        <div className="text-xs text-muted-foreground">
-                          Бицепс: <span className="font-semibold text-primary">{latestMetric.biceps} см</span>
-                        </div>
-                      )}
-                      {(!user?.profile?.target_thigh || !latestMetric?.thigh) && latestMetric?.thigh && (
-                        <div className="text-xs text-muted-foreground">
-                          Бедро: <span className="font-semibold text-primary">{latestMetric.thigh} см</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!latestMetric && (
-                      <div className="text-sm text-muted-foreground text-center py-4">
-                        Нет замеров. Добавь первый замер!
+                    {/* Macro bars */}
+                    {(profile?.target_proteins || profile?.target_fats || profile?.target_carbs) && (
+                      <div className="space-y-2.5 pt-1 border-t border-white/8">
+                        {profile?.target_proteins && profile.target_proteins > 0 && (
+                          <MacroBar label="Белки" value={todayProteins} target={profile.target_proteins} color="#3b82f6" />
+                        )}
+                        {profile?.target_fats && profile.target_fats > 0 && (
+                          <MacroBar label="Жиры" value={todayFats} target={profile.target_fats} color="#eab308" />
+                        )}
+                        {profile?.target_carbs && profile.target_carbs > 0 && (
+                          <MacroBar label="Углеводы" value={todayCarbs} target={profile.target_carbs} color="#10b981" />
+                        )}
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </Link>
-            </div>
+            )}
 
-            {/* Кнопка изменения целей */}
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => setIsGoalsModalOpen(true)}>
-                <Target className="h-3 w-3 mr-1.5" />
-                Изменить цели
-              </Button>
-            </div>
+            {/* Замеры тела */}
+            <Link href="/diary?tab=metrics" className="group">
+              <Card className="h-full border-white/8 bg-card/60 hover:bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-violet-400" />
+                      <CardTitle className="text-base">Замеры тела</CardTitle>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {latestMetric ? (
+                    <div className="space-y-3">
+                      {/* Вес — крупно */}
+                      {latestMetric.weight && (
+                        <div className="flex items-end gap-2 pb-3 border-b border-white/8">
+                          <span className="text-3xl font-bold">{latestMetric.weight}</span>
+                          <span className="text-sm text-muted-foreground pb-1">кг</span>
+                          {profile?.target_weight && (
+                            <span className="text-xs text-muted-foreground pb-1 ml-1">
+                              / цель {profile.target_weight} кг
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Остальные замеры */}
+                      <div className="space-y-2.5">
+                        {latestMetric.chest && (
+                          <MeasurementRow label="Грудь" value={latestMetric.chest} target={profile?.target_chest} />
+                        )}
+                        {latestMetric.waist && (
+                          <MeasurementRow label="Талия" value={latestMetric.waist} target={profile?.target_waist} />
+                        )}
+                        {latestMetric.hips && (
+                          <MeasurementRow label="Бёдра" value={latestMetric.hips} target={profile?.target_hips} />
+                        )}
+                        {latestMetric.biceps && (
+                          <MeasurementRow label="Бицепс" value={latestMetric.biceps} target={profile?.target_biceps} />
+                        )}
+                        {latestMetric.thigh && (
+                          <MeasurementRow label="Бедро" value={latestMetric.thigh} target={profile?.target_thigh} />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Scale className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">Нет замеров</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Добавьте первый замер в дневнике</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
-          {/* Модальное окно целей */}
-          <GoalsModal isOpen={isGoalsModalOpen} onClose={(open) => setIsGoalsModalOpen(open)} />
-
-          {/* TDEE Calculator */}
-          <div className="mb-8">
-            <TDEECalculator />
-          </div>
-
-          {/* Графики */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="h-[400px]">
+          {/* ── Charts ───────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="h-[320px] sm:h-[360px]">
               <WeightChart
                 data={weightHistory}
-                targetWeight={user?.profile?.target_weight}
-                targetChest={user?.profile?.target_chest}
-                targetWaist={user?.profile?.target_waist}
-                targetHips={user?.profile?.target_hips}
-                targetBiceps={user?.profile?.target_biceps}
-                targetThigh={user?.profile?.target_thigh}
+                targetWeight={profile?.target_weight}
+                targetChest={profile?.target_chest}
+                targetWaist={profile?.target_waist}
+                targetHips={profile?.target_hips}
+                targetBiceps={profile?.target_biceps}
+                targetThigh={profile?.target_thigh}
               />
             </div>
-            <div className="h-[400px]">
+            <div className="h-[320px] sm:h-[360px]">
               <CaloriesChart
                 logs={nutritionHistory}
-                targetCalories={user?.profile?.target_calories}
+                targetCalories={profile?.target_calories}
               />
-            </div>
-          </div>
-
-          {/* Быстрые действия */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-extrabold mb-4">Быстрые действия</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {quickActions.map((action) => {
-                const Icon = action.icon
-                return (
-                  <Link key={action.title} href={action.href}>
-                    <Card className="hover:shadow-lg transition-all cursor-pointer h-full border-0">
-                      <CardHeader>
-                        <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
-                        <CardTitle>{action.title}</CardTitle>
-                        <CardDescription>{action.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button variant="ghost" className="w-full justify-between">
-                          Перейти
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                )
-              })}
             </div>
           </div>
 
         </main>
+
+        <GoalsModal isOpen={isGoalsModalOpen} onClose={(open) => setIsGoalsModalOpen(open)} />
       </div>
     </AuthGuard>
   )

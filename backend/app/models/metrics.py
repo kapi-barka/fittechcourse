@@ -24,6 +24,7 @@ class BodyMetric(Base):
     hips = Column(Float, nullable=True)  # Обхват бедер в см
     biceps = Column(Float, nullable=True)  # Обхват бицепса в см
     thigh = Column(Float, nullable=True)  # Обхват бедра в см
+    neck = Column(Float, nullable=True)   # Обхват шеи в см (для расчёта % жира по Navy)
     photo_url = Column(String, nullable=True)  # Ссылка на фото прогресса
     notes = Column(String, nullable=True)  # Заметки к замерам
 

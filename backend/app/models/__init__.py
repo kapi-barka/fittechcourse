@@ -10,6 +10,7 @@ from app.models.nutrition import FoodProduct, NutritionLog, HydrationLog
 from app.models.article import Article
 from app.models.user_program import UserProgram
 from app.models.recommendation import ExercisePerformanceLog, WorkoutRecommendation
+from app.models.chat import ChatMessage
 
 __all__ = [
     "User",
@@ -25,5 +26,6 @@ __all__ = [
     "UserProgram",
     "ExercisePerformanceLog",
     "WorkoutRecommendation",
+    "ChatMessage",
 ]
 

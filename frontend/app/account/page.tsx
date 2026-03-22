@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { uploadAPI, usersAPI, UserProfile } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { User, Loader2, Camera, Save } from 'lucide-react'
+import { User, Loader2, Camera, Save, ChevronDown } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 export default function AccountPage() {
@@ -22,6 +22,10 @@ export default function AccountPage() {
     const [fullName, setFullName] = useState('')
     const [height, setHeight] = useState<number | ''>('')
     const [birthDate, setBirthDate] = useState('')
+    const [gender, setGender] = useState<string>('')
+    const [activityLevel, setActivityLevel] = useState<string>('')
+    const [fitnessGoal, setFitnessGoal] = useState<string>('')
+    const [experienceLevel, setExperienceLevel] = useState<string>('')
     const [isLoading, setIsLoading] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -30,12 +34,11 @@ export default function AccountPage() {
         if (user?.profile) {
             setFullName(user.profile.full_name || '')
             setHeight(user.profile.height || '')
-            // Форматируем дату для input type="date" (YYYY-MM-DD)
-            if (user.profile.birth_date) {
-                setBirthDate(user.profile.birth_date)
-            } else {
-                setBirthDate('')
-            }
+            setBirthDate(user.profile.birth_date || '')
+            setGender(user.profile.gender || '')
+            setActivityLevel(user.profile.activity_level || '')
+            setFitnessGoal(user.profile.fitness_goal || '')
+            setExperienceLevel(user.profile.experience_level || '')
         }
     }, [user])
 
@@ -43,16 +46,14 @@ export default function AccountPage() {
         setIsLoading(true)
         try {
             const updateData: Partial<UserProfile> = { full_name: fullName }
-            
-            // Добавляем рост, если указан
             if (height !== '' && height !== undefined) {
                 updateData.height = typeof height === 'number' ? height : parseFloat(height as string)
             }
-            
-            // Добавляем дату рождения, если указана
-            if (birthDate) {
-                updateData.birth_date = birthDate
-            }
+            if (birthDate) updateData.birth_date = birthDate
+            if (gender) updateData.gender = gender as UserProfile['gender']
+            if (activityLevel) updateData.activity_level = activityLevel as UserProfile['activity_level']
+            if (fitnessGoal) updateData.fitness_goal = fitnessGoal as UserProfile['fitness_goal']
+            if (experienceLevel) updateData.experience_level = experienceLevel as UserProfile['experience_level']
             
             await usersAPI.updateProfile(updateData)
             await refreshUser() // Обновляем данные пользователя в сторе
@@ -94,7 +95,7 @@ export default function AccountPage() {
     return (
         <AuthGuard>
             <div className="min-h-screen">
-                <main className="container mx-auto px-4 py-8 max-w-2xl">
+                <main className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
                     <Card>
                         <CardHeader>
                             <CardTitle>Личные данные</CardTitle>
@@ -188,6 +189,81 @@ export default function AccountPage() {
                                         onChange={(e) => setBirthDate(e.target.value)}
                                         max={new Date().toISOString().split('T')[0]}
                                     />
+                                </div>
+                            </div>
+
+                            {/* Пол + Активность */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none">Пол</label>
+                                    <div className="relative">
+                                        <select
+                                            value={gender}
+                                            onChange={e => setGender(e.target.value)}
+                                            className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring pr-8"
+                                        >
+                                            <option value="">Не указан</option>
+                                            <option value="male">Мужской</option>
+                                            <option value="female">Женский</option>
+                                            <option value="other">Другой</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none">Уровень активности</label>
+                                    <div className="relative">
+                                        <select
+                                            value={activityLevel}
+                                            onChange={e => setActivityLevel(e.target.value)}
+                                            className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring pr-8"
+                                        >
+                                            <option value="">Не указан</option>
+                                            <option value="sedentary">Сидячий образ жизни</option>
+                                            <option value="lightly_active">Лёгкая активность (1–2 раза/нед)</option>
+                                            <option value="moderately_active">Умеренная (3–5 раз/нед)</option>
+                                            <option value="very_active">Высокая (6–7 раз/нед)</option>
+                                            <option value="extremely_active">Очень высокая (2 раза в день)</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Цель + Опыт */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none">Цель тренировок</label>
+                                    <div className="relative">
+                                        <select
+                                            value={fitnessGoal}
+                                            onChange={e => setFitnessGoal(e.target.value)}
+                                            className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring pr-8"
+                                        >
+                                            <option value="">Не указана</option>
+                                            <option value="lose_fat">Похудение / сжигание жира</option>
+                                            <option value="gain_muscle">Набор мышечной массы</option>
+                                            <option value="recomposition">Рекомпозиция тела</option>
+                                            <option value="maintain">Поддержание формы</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none">Уровень подготовки</label>
+                                    <div className="relative">
+                                        <select
+                                            value={experienceLevel}
+                                            onChange={e => setExperienceLevel(e.target.value)}
+                                            className="w-full appearance-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring pr-8"
+                                        >
+                                            <option value="">Не указан</option>
+                                            <option value="beginner">Новичок (менее 1 года)</option>
+                                            <option value="intermediate">Средний (1–3 года)</option>
+                                            <option value="advanced">Продвинутый (3+ лет)</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
 

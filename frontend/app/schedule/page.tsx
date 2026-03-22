@@ -6,12 +6,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { scheduleAPI, exercisesAPI, ProgramWithDetails, Exercise } from '@/lib/api'
 import { getDayName, cn } from '@/lib/utils'
 import { MuscleMap } from '@/components/ui/MuscleMap'
+import { translateMuscleGroups } from '@/lib/muscleGroups'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from 'react-toastify'
 import {
@@ -139,7 +140,7 @@ export default function SchedulePage() {
     return (
       <AuthGuard>
         <div className="min-h-screen">
-          <main className="container mx-auto px-4 py-8">
+          <main className="container mx-auto px-4 py-4 sm:py-8">
             <div className="text-center py-12">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
               <p className="mt-4 text-muted-foreground">Загрузка расписания...</p>
@@ -169,7 +170,7 @@ export default function SchedulePage() {
     <AuthGuard>
       <div className="min-h-screen">
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-4 sm:py-8">
           {!program ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="text-center py-12">
@@ -184,108 +185,91 @@ export default function SchedulePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-8">
-              {/* Верхняя панель: Прогресс и Информация */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{program.title}</CardTitle>
-                    <CardDescription>Прогресс программы</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Тренировка {completedWorkouts} из {totalWorkoutDays}</span>
-                          <span className="font-medium">{Math.round(progressPercent)}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-500"
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {isFinished && (
-                        <div className="bg-green-100 dark:bg-green-900/15 text-green-700 dark:text-green-400/80 p-3 rounded-lg flex items-start text-sm">
-                          <Trophy className="h-4 w-4 mr-2 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-medium">Программа завершена!</p>
-                            <Button
-                              variant="link"
-                              className="px-0 h-auto text-green-600 dark:text-green-400/70 p-0 text-xs"
-                              onClick={() => router.push('/programs')}
-                            >
-                              Выбрать новую
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+            <div className="space-y-4">
+              {/* Прогресс программы — единая компактная карточка */}
+              <Card className="border-0 shadow-md">
+                <CardContent className="p-4">
+                  {/* Заголовок + процент */}
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-sm leading-tight truncate">{program.title}</h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {completedWorkouts} из {totalWorkoutDays} тренировок
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <span className="text-2xl font-bold text-primary shrink-0">
+                      {Math.round(progressPercent)}%
+                    </span>
+                  </div>
 
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Прогресс по неделям</CardTitle>
-                    <CardDescription>
-                      {completedWorkouts} из {totalWorkoutDays} тренировок выполнено
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {workoutsPerWeek === 0 ? (
-                      <p className="text-sm text-muted-foreground">Нет данных о программе</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {Array.from({ length: totalWeeks }, (_, weekIndex) => {
-                          const weekNumber = weekIndex + 1
-                          const doneInThisWeek = Math.min(
-                            workoutsPerWeek,
-                            Math.max(0, completedWorkouts - weekIndex * workoutsPerWeek)
-                          )
-                          const isCurrentWeek = weekNumber === currentWeek
-                          return (
-                            <div key={weekIndex} className="flex items-center gap-3">
-                              <span className={cn(
-                                "text-xs w-16 shrink-0",
-                                isCurrentWeek ? "text-primary font-semibold" : "text-muted-foreground"
-                              )}>
-                                Неделя {weekNumber}
-                              </span>
-                              <div className="flex gap-2 flex-wrap">
-                                {Array.from({ length: workoutsPerWeek }, (_, dayIndex) => {
-                                  const isDone = dayIndex < doneInThisWeek
-                                  const isCurrent = isCurrentWeek && dayIndex === doneInThisWeek
-                                  return (
-                                    <div
-                                      key={dayIndex}
-                                      title={isDone ? `Тренировка ${weekIndex * workoutsPerWeek + dayIndex + 1} выполнена` : undefined}
-                                      className={cn(
-                                        "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                                        isDone
-                                          ? "bg-primary text-primary-foreground"
-                                          : isCurrent
-                                            ? "border-2 border-primary bg-primary/10"
-                                            : "bg-muted text-muted-foreground"
-                                      )}
-                                    >
-                                      {isDone
-                                        ? <CheckCircle2 className="h-4 w-4" />
-                                        : <span className="text-xs">{weekIndex * workoutsPerWeek + dayIndex + 1}</span>
-                                      }
-                                    </div>
-                                  )
-                                })}
-                              </div>
+                  {/* Прогресс-бар */}
+                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden mb-4">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+
+                  {isFinished && (
+                    <div className="bg-green-100 dark:bg-green-900/15 text-green-700 dark:text-green-400/80 px-3 py-2 rounded-lg flex items-center gap-2 text-sm mb-4">
+                      <Trophy className="h-4 w-4 shrink-0" />
+                      <span className="font-medium">Программа завершена!</span>
+                      <Button variant="link" className="px-0 h-auto text-green-600 dark:text-green-400/70 p-0 text-xs ml-auto" onClick={() => router.push('/programs')}>
+                        Выбрать новую
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Сетка недель: 2 колонки на мобайле, 4 на десктопе */}
+                  {workoutsPerWeek > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                      {Array.from({ length: totalWeeks }, (_, weekIndex) => {
+                        const weekNumber = weekIndex + 1
+                        const doneInThisWeek = Math.min(
+                          workoutsPerWeek,
+                          Math.max(0, completedWorkouts - weekIndex * workoutsPerWeek)
+                        )
+                        const isCurrentWeek = weekNumber === currentWeek
+                        return (
+                          <div key={weekIndex} className="flex items-center gap-1.5">
+                            <span className={cn(
+                              "text-[10px] w-9 shrink-0 whitespace-nowrap",
+                              isCurrentWeek ? "text-primary font-bold" : "text-muted-foreground"
+                            )}>
+                              Нед {weekNumber}
+                            </span>
+                            <div className="flex gap-1">
+                              {Array.from({ length: workoutsPerWeek }, (_, dayIndex) => {
+                                const isDone = dayIndex < doneInThisWeek
+                                const isCurrent = isCurrentWeek && dayIndex === doneInThisWeek
+                                return (
+                                  <div
+                                    key={dayIndex}
+                                    title={isDone ? `Тренировка ${weekIndex * workoutsPerWeek + dayIndex + 1} выполнена` : undefined}
+                                    className={cn(
+                                      "w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                                      isDone
+                                        ? "bg-primary text-primary-foreground"
+                                        : isCurrent
+                                          ? "border-2 border-primary bg-primary/10"
+                                          : "bg-muted text-muted-foreground"
+                                    )}
+                                  >
+                                    {isDone
+                                      ? <CheckCircle2 className="h-3 w-3" />
+                                      : <span className="text-[9px]">{weekIndex * workoutsPerWeek + dayIndex + 1}</span>
+                                    }
+                                  </div>
+                                )
+                              })}
                             </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Основная секция: Текущая тренировка */}
               <div>
@@ -311,9 +295,9 @@ export default function SchedulePage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold flex items-center">
-                        <Calendar className="mr-2 h-6 w-6 text-primary" />
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h2 className="text-lg sm:text-xl font-semibold flex items-center">
+                        <Calendar className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                         {getDayName(currentDay)}
                       </h2>
                       {todaysExercises.length > 0 && (
@@ -326,8 +310,8 @@ export default function SchedulePage() {
                     {todaysExercises.length === 0 ? (
                       <Card className="border-0 shadow">
                         <CardContent className="py-12 text-center">
-                          <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded-full inline-flex mb-4">
-                            <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                          <div className="bg-primary/10 p-4 rounded-full inline-flex mb-4">
+                            <Clock className="h-8 w-8 text-primary" />
                           </div>
                           <h3 className="text-xl font-semibold mb-2">День отдыха</h3>
                           <p className="text-muted-foreground max-w-md mx-auto">
@@ -347,33 +331,28 @@ export default function SchedulePage() {
                                 isCompleted && "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800"
                               )}
                             >
-                              <CardContent className="p-6">
-                                <div className="flex items-start gap-4">
-                                  <div className="flex items-center gap-3">
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleExerciseCompleted(detail.id)}
-                                      className={cn(
-                                        "relative flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-200 cursor-pointer",
-                                        "focus:outline-none active:scale-95",
-                                        isCompleted
-                                          ? "bg-primary border-primary text-primary-foreground"
-                                          : "bg-background border-muted-foreground/30 hover:border-primary/50"
-                                      )}
-                                      aria-label={isCompleted ? "Отметить как невыполненное" : "Отметить как выполненное"}
-                                    >
-                                      {isCompleted && (
-                                        <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
-                                      )}
-                                    </button>
-                                    <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-xl hidden sm:block">
-                                      <Dumbbell className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-start">
+                              <CardContent className="p-3 sm:p-4">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExerciseCompleted(detail.id)}
+                                    className={cn(
+                                      "relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all duration-200 cursor-pointer shrink-0",
+                                      "focus:outline-none active:scale-95",
+                                      isCompleted
+                                        ? "bg-primary border-primary text-primary-foreground"
+                                        : "bg-background border-muted-foreground/30 hover:border-primary/50"
+                                    )}
+                                    aria-label={isCompleted ? "Отметить как невыполненное" : "Отметить как выполненное"}
+                                  >
+                                    {isCompleted && (
+                                      <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                                    )}
+                                  </button>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center">
                                       <h3 className={cn(
-                                        "text-lg font-semibold mb-1 transition-all",
+                                        "text-sm font-semibold transition-all truncate",
                                         isCompleted && "line-through text-muted-foreground"
                                       )}>
                                         {index + 1}. {exercises[detail.exercise_id]?.name || 'Упражнение'}
@@ -381,45 +360,43 @@ export default function SchedulePage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0 rounded-full"
+                                        className="h-7 w-7 p-0 rounded-full shrink-0 ml-2"
                                         onClick={() => openExerciseDetails(detail.exercise_id)}
                                         title="Подробнее"
                                       >
-                                        <Info className="h-5 w-5 text-primary" />
+                                        <Info className="h-4 w-4 text-primary" />
                                       </Button>
                                     </div>
-
-                                  <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
-                                    <div className="bg-muted/50 p-2 rounded text-center">
-                                      <span className="block text-muted-foreground text-xs">Подходы</span>
-                                      <span className="font-semibold text-base">{detail.sets}</span>
+                                    <div className="flex gap-3 mt-1.5 text-xs">
+                                      <span className="bg-muted/50 px-2 py-1 rounded">
+                                        <span className="text-muted-foreground">Подходы: </span>
+                                        <span className="font-semibold">{detail.sets}</span>
+                                      </span>
+                                      <span className="bg-muted/50 px-2 py-1 rounded">
+                                        <span className="text-muted-foreground">Повторения: </span>
+                                        <span className="font-semibold">{detail.reps}</span>
+                                      </span>
+                                      <span className="bg-muted/50 px-2 py-1 rounded">
+                                        <span className="text-muted-foreground">Отдых: </span>
+                                        <span className="font-semibold">{detail.rest_time || 60}с</span>
+                                      </span>
                                     </div>
-                                    <div className="bg-muted/50 p-2 rounded text-center">
-                                      <span className="block text-muted-foreground text-xs">Повторения</span>
-                                      <span className="font-semibold text-base">{detail.reps}</span>
-                                    </div>
-                                    <div className="bg-muted/50 p-2 rounded text-center">
-                                      <span className="block text-muted-foreground text-xs">Отдых</span>
-                                      <span className="font-semibold text-base">{detail.rest_time || 60}с</span>
-                                    </div>
+                                    {detail.notes && (
+                                      <p className="text-xs text-muted-foreground mt-1.5 bg-yellow-50 dark:bg-yellow-900/10 px-2 py-1 rounded border border-yellow-100 dark:border-yellow-900/30">
+                                        💡 {detail.notes}
+                                      </p>
+                                    )}
                                   </div>
-
-                                  {detail.notes && (
-                                    <p className="text-sm text-muted-foreground mt-3 bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-100 dark:border-yellow-900/30">
-                                      💡 {detail.notes}
-                                    </p>
-                                  )}
                                 </div>
-                              </div>
                             </CardContent>
                           </Card>
                           )
                         })}
 
-                        <Card className="border-0 shadow-lg bg-primary/5 mt-8">
-                          <CardContent className="p-6">
-                            <h3 className="font-semibold mb-4">Завершение тренировки</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <Card className="border-0 shadow-lg bg-primary/5 mt-3">
+                          <CardContent className="p-4">
+                            <h3 className="font-semibold mb-3 text-sm">Завершение тренировки</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                               <div>
                                 <label className="text-sm font-medium mb-1 block">Длительность (мин)</label>
                                 <Input
@@ -440,7 +417,7 @@ export default function SchedulePage() {
                             </div>
 
                             <Button
-                              className="w-full text-lg h-12"
+                              className="w-full text-base sm:text-lg h-11 sm:h-12"
                               onClick={handleFinishWorkout}
                               disabled={isSubmitting}
                               isLoading={isSubmitting}
@@ -571,7 +548,7 @@ export default function SchedulePage() {
               </div>
               {selectedExercise?.muscle_groups && (
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Группа: {selectedExercise.muscle_groups.join(', ')}
+                  Группа: {translateMuscleGroups(selectedExercise.muscle_groups)}
                 </p>
               )}
             </div>
