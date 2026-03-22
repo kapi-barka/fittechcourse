@@ -446,6 +446,7 @@ export const nutritionAPI = {
     weight_g: number;
     meal_type?: string;
     notes?: string;
+    eaten_at?: string;
   }) => api.post<NutritionLog>('/nutrition/logs/from-barcode', data),
 
   // Дневник питания
