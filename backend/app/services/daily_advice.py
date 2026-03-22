@@ -12,30 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_available_gemini_model(api_key: str) -> Optional[str]:
-    """
-    Определяет доступную модель Gemini API через ListModels
-    """
-    try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models?key=" + api_key
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url)
-            if response.status_code == 200:
-                models = response.json().get("models", [])
-                # Ищем модели с поддержкой генерации текста
-                for model in models:
-                    model_name = model.get("name", "")
-                    if "gemini" in model_name.lower() and "1.5" in model_name:
-                        if "flash" in model_name.lower():
-                            return model_name.split("/")[-1]
-                # Если flash не найден, берем первую доступную gemini 1.5
-                for model in models:
-                    model_name = model.get("name", "")
-                    if "gemini" in model_name.lower() and "1.5" in model_name:
-                        return model_name.split("/")[-1]
-        return None
-    except Exception as e:
-        logger.warning(f"Could not determine available Gemini models: {e}")
-        return None
+    return "gemini-2.5-flash"
 
 
 async def generate_daily_advice(
@@ -67,13 +44,9 @@ async def generate_daily_advice(
         # Определяем доступную модель
         model_name = await get_available_gemini_model(api_key)
         if not model_name:
-            model_name = "gemini-1.5-flash"
+            model_name = "gemini-2.5-flash"
         
-        # Определяем версию API из имени модели
-        if "1.5" in model_name:
-            api_version = "v1beta"
-        else:
-            api_version = "v1"
+        api_version = "v1beta"
         
         url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_name}:generateContent?key={api_key}"
         

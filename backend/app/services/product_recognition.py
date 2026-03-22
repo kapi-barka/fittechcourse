@@ -1,6 +1,6 @@
 """
 Сервис для распознавания продуктов по фотографии с помощью AI
-Поддерживает несколько провайдеров: OpenAI, Google Vision, Spoonacular
+Поддерживает провайдеры: Google Gemini, Google Vision, Hugging Face, Spoonacular
 """
 import base64
 import io
@@ -21,204 +21,13 @@ except ImportError:
     pytesseract = None
 
 
-async def recognize_product_openai(image_data: bytes, api_key: str) -> Optional[Dict[str, Any]]:
-    """
-    Распознавание продукта с помощью OpenAI GPT-4 Vision
-    Анализирует изображение и определяет продукт + КБЖУ напрямую
-    
-    Args:
-        image_data: Байты изображения
-        api_key: OpenAI API ключ
-        
-    Returns:
-        Dict с информацией о продукте или None
-    """
-    try:
-        import httpx
-        import json
-        import re
-        
-        if Image is None:
-            logger.error("PIL/Pillow not installed")
-            return None
-        
-        # Конвертируем изображение в base64
-        image_base64 = base64.b64encode(image_data).decode('utf-8')
-        
-        # Определяем MIME тип
-        image = Image.open(io.BytesIO(image_data))
-        mime_type = f"image/{image.format.lower()}" if image.format else "image/jpeg"
-        
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        prompt = """Ты эксперт по питанию и распознаванию продуктов. Проанализируй это изображение и определи продукт питания.
-
-АНАЛИЗИРУЙ:
-1. Что изображено на фото (продукт, упаковка, готовое блюдо и т.д.)
-2. Название продукта на русском языке (максимально точное)
-3. Бренд (если виден на упаковке/этикетке)
-4. Категорию продукта
-5. КБЖУ на 100г:
-   - Если видна информация о КБЖУ на упаковке/этикетке - используй ТОЧНЫЕ значения оттуда
-   - Если информации нет - оцени на основе визуального анализа и типичных значений для этого продукта
-   - Учитывай способ приготовления (сырое, вареное, жареное и т.д.)
-
-ВЕРНИ ОТВЕТ ТОЛЬКО В ФОРМАТЕ JSON, БЕЗ ДОПОЛНИТЕЛЬНОГО ТЕКСТА:
-{
-    "name": "точное название продукта на русском языке",
-    "description": "краткое описание продукта (1-2 предложения)",
-    "estimated_calories_per_100g": число или null,
-    "estimated_proteins_per_100g": число или null,
-    "estimated_fats_per_100g": число или null,
-    "estimated_carbs_per_100g": число или null,
-    "brand": "бренд" или null,
-    "category": "категория продукта (овощи, фрукты, мясо, молочные продукты и т.д.)",
-    "confidence": "высокая" или "средняя" или "низкая"
-}
-
-ПРАВИЛА:
-- Все числа должны быть числовыми значениями (не строками), например: 41, а не "41" или "41 ккал"
-- Если не можешь определить значение - используй null
-- Название продукта должно быть максимально точным (например, "Морковь", а не "Овощ")
-- Если видишь текст на упаковке с КБЖУ - используй эти значения
-- Будь максимально точным и внимательным"""
-
-        payload = {
-            "model": "gpt-4o",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{image_base64}",
-                                "detail": "high"  # Высокое качество для лучшего распознавания
-                            }
-                        }
-                    ]
-                }
-            ],
-            "max_tokens": 800,
-            "temperature": 0.2,  # Низкая температура для более точных ответов
-            "response_format": {"type": "json_object"}  # Принудительный JSON формат
-        }
-        
-        print(f"    📤 [OpenAI] Sending request to OpenAI API...")
-        print(f"       Model: gpt-4o")
-        print(f"       Image size: {len(image_data)} bytes")
-        print(f"       Image format: {mime_type}")
-        print(f"       API Key (first 10 chars): {api_key[:10]}...")
-        
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            
-            # Проверяем статус ответа и выводим детальную информацию об ошибке
-            if response.status_code != 200:
-                error_detail = response.text
-                print(f"    ❌ [OpenAI] API Error {response.status_code}: {error_detail[:500]}")
-                logger.error(f"OpenAI API error {response.status_code}: {error_detail}")
-                
-                if response.status_code == 403:
-                    error_msg = "Доступ запрещен. Проверьте API ключ OpenAI и убедитесь, что у вас есть доступ к GPT-4 Vision API."
-                elif response.status_code == 401:
-                    error_msg = "Неверный API ключ OpenAI. Проверьте правильность ключа в настройках."
-                elif response.status_code == 429:
-                    error_msg = "Превышен лимит запросов к OpenAI API. Попробуйте позже."
-                elif response.status_code == 500:
-                    error_msg = "Внутренняя ошибка сервера OpenAI. Попробуйте позже."
-                else:
-                    error_msg = f"Ошибка OpenAI API (код {response.status_code}): {error_detail[:200]}"
-                
-                raise ValueError(error_msg)
-            
-            response.raise_for_status()
-            
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-            
-            print(f"    📥 [OpenAI] Received response from OpenAI")
-            print(f"       Response length: {len(content)} chars")
-            print(f"       Response preview: {content[:200]}...")
-            
-            # Парсим JSON из ответа
-            try:
-                # Пробуем распарсить как чистый JSON
-                product_data = json.loads(content)
-                print(f"    ✅ [OpenAI] Successfully parsed JSON response")
-            except json.JSONDecodeError:
-                print(f"    ⚠️  [OpenAI] Failed to parse as JSON, trying regex extraction...")
-                # Если не получилось, пытаемся извлечь JSON из текста
-                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
-                if json_match:
-                    product_data = json.loads(json_match.group())
-                    print(f"    ✅ [OpenAI] Successfully extracted JSON with regex")
-                else:
-                    print(f"    ❌ [OpenAI] Could not extract JSON from response")
-                    logger.error(f"Could not parse JSON from OpenAI response: {content[:200]}")
-                    return None
-            
-            # Валидация и нормализация данных
-            if not isinstance(product_data, dict):
-                print(f"    ❌ [OpenAI] Response is not a dict")
-                logger.error("OpenAI returned non-dict response")
-                return None
-            
-            # Убеждаемся, что числовые значения действительно числа
-            for key in ['estimated_calories_per_100g', 'estimated_proteins_per_100g', 
-                       'estimated_fats_per_100g', 'estimated_carbs_per_100g']:
-                if key in product_data and product_data[key] is not None:
-                    try:
-                        product_data[key] = float(product_data[key])
-                    except (ValueError, TypeError):
-                        product_data[key] = None
-            
-            print(f"    ✅ [OpenAI] Recognition completed!")
-            print(f"       Product: {product_data.get('name')}")
-            print(f"       Confidence: {product_data.get('confidence')}")
-            print(f"       Calories: {product_data.get('estimated_calories_per_100g')}")
-            print(f"       Brand: {product_data.get('brand')}")
-            logger.info(f"[OpenAI GPT-4 Vision] Recognition completed: product='{product_data.get('name')}', confidence={product_data.get('confidence')}, calories={product_data.get('estimated_calories_per_100g')}, brand={product_data.get('brand')}")
-            return product_data
-            
-    except ValueError as e:
-        # Это наши кастомные ошибки с понятными сообщениями
-        print(f"    ❌ [OpenAI] Error: {e}")
-        logger.error(f"Error recognizing product with OpenAI: {e}")
-        return None
-    except Exception as e:
-        # Проверяем, является ли это HTTP ошибкой
-        import httpx
-        if isinstance(e, httpx.HTTPStatusError):
-            error_msg = str(e)
-            if "403" in error_msg:
-                error_msg = "Доступ запрещен к OpenAI API. Проверьте API ключ и права доступа."
-            elif "401" in error_msg:
-                error_msg = "Неверный API ключ OpenAI."
-            elif "429" in error_msg:
-                error_msg = "Превышен лимит запросов к OpenAI API."
-            else:
-                error_msg = f"Ошибка OpenAI API: {error_msg}"
-        else:
-            error_msg = str(e)
-        print(f"    ❌ [OpenAI] Unexpected error: {error_msg}")
-        logger.error(f"Error recognizing product with OpenAI: {error_msg}", exc_info=True)
-        return None
 
 
 async def recognize_product_huggingface(image_data: bytes, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Распознавание продукта с помощью Hugging Face Inference API (БЕСПЛАТНО, но нестабильно)
     ВНИМАНИЕ: Hugging Face изменил API, текущая реализация может не работать.
-    Рекомендуется использовать Google Vision API (1000 запросов/месяц бесплатно) или OpenAI.
+    Рекомендуется использовать Google Vision API (1000 запросов/месяц бесплатно) или Gemini.
     
     Использует модели для распознавания объектов и продуктов
     
@@ -408,53 +217,7 @@ async def recognize_product_huggingface(image_data: bytes, api_key: Optional[str
 
 
 async def get_available_gemini_model(api_key: str) -> Optional[str]:
-    """
-    Определяет доступную модель Gemini API через ListModels
-    """
-    try:
-        import httpx
-        
-        # Пробуем разные endpoints для ListModels
-        list_endpoints = [
-            "https://generativelanguage.googleapis.com/v1/models",
-            "https://generativelanguage.googleapis.com/v1beta/models",
-        ]
-        
-        for endpoint in list_endpoints:
-            url = f"{endpoint}?key={api_key}"
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.get(url)
-                    if response.status_code == 200:
-                        models_data = response.json()
-                        models = models_data.get("models", [])
-                        
-                        # Ищем модель с поддержкой generateContent и изображений
-                        for model in models:
-                            model_name = model.get("name", "")
-                            supported_methods = model.get("supportedGenerationMethods", [])
-                            
-                            if "generateContent" in supported_methods:
-                                # Приоритет моделям с поддержкой изображений
-                                if "vision" in model_name.lower() or "1.5" in model_name.lower() or "flash" in model_name.lower():
-                                    print(f"    ✅ [Gemini] Found available model: {model_name}")
-                                    return model_name.split("/")[-1]  # Возвращаем только имя модели
-                        
-                        # Если не нашли специальную, берем первую с generateContent
-                        for model in models:
-                            model_name = model.get("name", "")
-                            supported_methods = model.get("supportedGenerationMethods", [])
-                            if "generateContent" in supported_methods:
-                                print(f"    ✅ [Gemini] Found available model: {model_name}")
-                                return model_name.split("/")[-1]
-            except Exception as e:
-                continue
-        
-        print(f"    ⚠️  [Gemini] Could not determine available models")
-        return None
-    except Exception as e:
-        print(f"    ⚠️  [Gemini] Error getting available models: {e}")
-        return None
+    return "gemini-2.5-flash"
 
 
 async def recognize_product_gemini(image_data: bytes, api_key: str, product_name: str = None, model_name: str = None) -> Optional[Dict[str, Any]]:
@@ -492,7 +255,7 @@ async def recognize_product_gemini(image_data: bytes, api_key: str, product_name
         
         if not model_name:
             # Fallback: пробуем стандартные варианты
-            model_name = "gemini-1.5-flash"
+            model_name = "gemini-2.5-flash"
             api_version = "v1beta"
         else:
             # Определяем версию API из имени модели
@@ -559,9 +322,7 @@ async def recognize_product_gemini(image_data: bytes, api_key: str, product_name
             if response.status_code == 404:
                 print(f"    ⚠️  [Gemini] Model {model_name} not found, trying alternatives...")
                 alternative_configs = [
-                    ("v1", "gemini-pro"),  # Без vision в названии
-                    ("v1beta", "gemini-1.5-pro"),  # v1beta с другой моделью
-                    ("v1beta", "gemini-1.5-flash"),  # v1beta с flash
+                    ("v1beta", "gemini-2.5-flash"),
                 ]
                 
                 for api_version, alt_model in alternative_configs:
@@ -1157,17 +918,17 @@ async def recognize_product_spoonacular(image_data: bytes, api_key: str) -> Opti
 
 async def recognize_product(
     image_data: bytes,
-    provider: str = "openai",
+    provider: str = "gemini",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Универсальная функция для распознавания продукта
-    
+
     Args:
         image_data: Байты изображения
-        provider: Провайдер ("openai", "google", "gemini", "spoonacular", "huggingface")
+        provider: Провайдер ("gemini", "google", "spoonacular", "huggingface")
         api_key: API ключ провайдера (опционально для huggingface)
-        
+
     Returns:
         Dict с информацией о продукте или None
     """
@@ -1184,11 +945,7 @@ async def recognize_product(
     result = None
     
     try:
-        if provider == "openai":
-            print(f"  🤖 [recognize_product] Calling OpenAI GPT-4 Vision API...")
-            logger.info("Calling OpenAI GPT-4 Vision API...")
-            result = await recognize_product_openai(image_data, api_key)
-        elif provider == "google":
+        if provider == "google":
             print(f"  👁️  [recognize_product] Calling Google Vision API...")
             logger.info("Calling Google Vision API...")
             result = await recognize_product_google_vision(image_data, api_key)
@@ -1273,18 +1030,15 @@ async def recognize_product_from_text(
 
         # Пробуем модели по приоритету
         model_candidates = [
-            ("v1beta", "gemini-1.5-flash"),
-            ("v1beta", "gemini-1.5-pro"),
-            ("v1beta", "gemini-2.0-flash"),
-            ("v1", "gemini-pro"),
+            ("v1beta", "gemini-2.5-flash"),
         ]
 
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600},
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 8192},
         }
 
-        content = None
+        text_response = None
         async with httpx.AsyncClient(timeout=30.0) as client:
             for api_version, model_name in model_candidates:
                 url = (
@@ -1294,7 +1048,9 @@ async def recognize_product_from_text(
                 try:
                     response = await client.post(url, json=payload)
                     if response.status_code == 200:
-                        content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+                        parts = response.json()["candidates"][0]["content"].get("parts", [])
+                        text_parts = [p.get("text", "") for p in parts if p.get("text") and not p.get("thought")]
+                        text_response = "\n".join(text_parts)
                         logger.info(f"Gemini text recognition using {model_name}")
                         break
                     logger.warning(f"Gemini {model_name} returned {response.status_code}")
@@ -1302,20 +1058,33 @@ async def recognize_product_from_text(
                     logger.warning(f"Gemini {model_name} error: {e}")
                     continue
 
-        if not content:
+        if not text_response:
             logger.error("All Gemini models failed for text recognition")
             return None
 
-        # Парсим JSON
-        try:
-            product_data = json.loads(content)
-        except json.JSONDecodeError:
-            match = re.search(r'\{.*\}', content, re.DOTALL)
+        # Парсим JSON — сначала ищем ```json ... ```, потом первый {...}
+        product_data = None
+        for pattern in [r"```json\s*([\s\S]*?)```", r"```\s*([\s\S]*?)```"]:
+            match = re.search(pattern, text_response, re.DOTALL)
             if match:
-                product_data = json.loads(match.group())
-            else:
-                logger.error(f"Could not parse JSON from Gemini response: {content[:200]}")
-                return None
+                try:
+                    product_data = json.loads(match.group(1).strip())
+                    break
+                except json.JSONDecodeError:
+                    pass
+
+        if not product_data:
+            start = text_response.find('{')
+            end = text_response.rfind('}')
+            if start != -1 and end > start:
+                try:
+                    product_data = json.loads(text_response[start:end + 1])
+                except json.JSONDecodeError:
+                    pass
+
+        if not product_data:
+            logger.error(f"Could not parse JSON from Gemini response: {text_response[:300]}")
+            return None
 
         # Нормализация числовых полей
         for key in ['estimated_calories_per_100g', 'estimated_proteins_per_100g',

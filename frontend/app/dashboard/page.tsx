@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { metricsAPI, nutritionAPI, analyticsAPI, BodyMetric, NutritionLog } from '@/lib/api'
+import { metricsAPI, nutritionAPI, analyticsAPI, BodyMetric, NutritionLog, WeightPrediction } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { WeightChart } from '@/components/dashboard/WeightChart'
 import { CaloriesChart } from '@/components/dashboard/CaloriesChart'
@@ -18,13 +18,9 @@ import {
   ArrowRight,
   Scale,
   Ruler,
-  Zap,
-  Activity,
-  Dumbbell,
 } from 'lucide-react'
 import Link from 'next/link'
 import { subDays, format } from 'date-fns'
-import { ru } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 // ── Calorie Ring (SVG) ──────────────────────────────────────────────
@@ -90,27 +86,18 @@ function StatChip({
   label,
   value,
   sub,
-  icon: Icon,
   accent,
 }: {
   label: string
   value: string
   sub?: string
-  icon: React.ElementType
   accent: string
 }) {
   return (
-    <div className={cn(
-      'flex items-center gap-3 rounded-xl border border-white/8 bg-card/60 px-4 py-3',
-    )}>
-      <div className={cn('flex items-center justify-center w-9 h-9 rounded-lg shrink-0', accent)}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground truncate">{label}</p>
-        <p className="text-sm font-bold leading-tight">{value}</p>
-        {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
-      </div>
+    <div className="flex-1 flex flex-col justify-center rounded-xl border border-white/8 bg-card/60 px-4 py-3 min-w-0">
+      <p className={cn('text-xs font-medium mb-0.5', accent)}>{label}</p>
+      <p className="text-sm font-bold leading-tight truncate">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -162,6 +149,7 @@ export default function DashboardPage() {
     fitness_goal?: string | null
     body_fat_pct?: number | null
   } | null>(null)
+  const [weightPrediction, setWeightPrediction] = useState<WeightPrediction | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
 
@@ -173,7 +161,7 @@ export default function DashboardPage() {
     await Promise.allSettled([
       metricsAPI.latest().then(r => setLatestMetric(r.data)).catch(() => {}),
       metricsAPI.list({ from_date: format(thirtyDaysAgo, 'yyyy-MM-dd') }).then(r => setWeightHistory(r.data)).catch(() => {}),
-      nutritionAPI.getDailySummary().then(r => {
+      nutritionAPI.getDailySummary(format(new Date(), 'yyyy-MM-dd')).then(r => {
         setTodayCalories(r.data.total_calories || 0)
         setTodayProteins(r.data.total_proteins || 0)
         setTodayFats(r.data.total_fats || 0)
@@ -181,6 +169,7 @@ export default function DashboardPage() {
       }).catch(() => {}),
       nutritionAPI.listLogs({ from_date: format(sevenDaysAgo, 'yyyy-MM-dd') }).then(r => setNutritionHistory(r.data)).catch(() => {}),
       analyticsAPI.getTDEE().then(r => setTdeeData(r.data)).catch(() => {}),
+      analyticsAPI.getWeightPrediction().then(r => setWeightPrediction(r.data)).catch(() => {}),
     ])
 
     setIsLoading(false)
@@ -198,14 +187,6 @@ export default function DashboardPage() {
   }, [])
 
   const profile = user?.profile
-  const greeting = (() => {
-    const h = new Date().getHours()
-    if (h < 6)  return 'Доброй ночи'
-    if (h < 12) return 'Доброе утро'
-    if (h < 18) return 'Добрый день'
-    return 'Добрый вечер'
-  })()
-  const firstName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
 
   const activityLabels: Record<string, string> = {
     sedentary: 'Сидячий',
@@ -227,58 +208,33 @@ export default function DashboardPage() {
       <div className="min-h-screen">
         <main className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
 
-          {/* ── Greeting ─────────────────────────────── */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold leading-tight">
-                {greeting}{firstName ? `, ${firstName}` : ''}!
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {format(new Date(), 'EEEE, d MMMM', { locale: ru })}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs shrink-0"
-              onClick={() => setIsGoalsModalOpen(true)}
-            >
-              <Target className="h-3 w-3 mr-1.5" />
-              Изменить цели
-            </Button>
-          </div>
-
           {/* ── TDEE / BMR Chips ─────────────────────── */}
           {(tdeeData || latestMetric?.weight) && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+            <div className="flex items-stretch gap-3">
               {tdeeData && (
                 <>
                   <StatChip
                     label="BMR"
                     value={`${Math.round(tdeeData.bmr)} ккал`}
                     sub="базовый обмен"
-                    icon={Activity}
-                    accent="bg-blue-500/15 text-blue-400"
+                    accent="text-blue-400"
                   />
                   <StatChip
                     label="TDEE"
                     value={`${Math.round(tdeeData.tdee)} ккал`}
                     sub="с учётом активности"
-                    icon={Zap}
-                    accent="bg-emerald-500/15 text-emerald-400"
+                    accent="text-emerald-400"
                   />
                   <StatChip
                     label="Активность"
                     value={activityLabels[tdeeData.activity_level] || tdeeData.activity_level}
-                    icon={Flame}
-                    accent="bg-orange-500/15 text-orange-400"
+                    accent="text-orange-400"
                   />
                   {tdeeData.fitness_goal && (
                     <StatChip
                       label="Цель"
                       value={goalLabels[tdeeData.fitness_goal] || tdeeData.fitness_goal}
-                      icon={Dumbbell}
-                      accent="bg-pink-500/15 text-pink-400"
+                      accent="text-pink-400"
                     />
                   )}
                   {tdeeData.body_fat_pct !== null && tdeeData.body_fat_pct !== undefined && (
@@ -286,8 +242,7 @@ export default function DashboardPage() {
                       label="Жир тела"
                       value={`${tdeeData.body_fat_pct}%`}
                       sub="Navy formula"
-                      icon={Activity}
-                      accent="bg-cyan-500/15 text-cyan-400"
+                      accent="text-cyan-400"
                     />
                   )}
                 </>
@@ -297,10 +252,18 @@ export default function DashboardPage() {
                   label="Вес"
                   value={`${latestMetric.weight} кг`}
                   sub={profile?.target_weight ? `цель: ${profile.target_weight} кг` : undefined}
-                  icon={Scale}
-                  accent="bg-violet-500/15 text-violet-400"
+                  accent="text-violet-400"
                 />
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs shrink-0 self-center"
+                onClick={() => setIsGoalsModalOpen(true)}
+              >
+                <Target className="h-3 w-3 mr-1.5" />
+                Изменить цели
+              </Button>
             </div>
           )}
 
@@ -441,6 +404,7 @@ export default function DashboardPage() {
                 targetHips={profile?.target_hips}
                 targetBiceps={profile?.target_biceps}
                 targetThigh={profile?.target_thigh}
+                prediction={weightPrediction}
               />
             </div>
             <div className="h-[320px] sm:h-[360px]">

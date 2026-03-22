@@ -214,18 +214,15 @@ async def recognize_product_from_image(
         provider = settings.PRODUCT_RECOGNITION_PROVIDER
         
         # ВРЕМЕННО ОТКЛЮЧЕН: Spoonacular выдает одинаковые результаты
-        # Используем OpenAI вместо Spoonacular
         if provider == "spoonacular":
             print(f"⚠️  WARNING: Spoonacular temporarily disabled (returns same results for all images)")
-            print(f"   Falling back to OpenAI instead")
-            logger.warning(f"Spoonacular provider requested but temporarily disabled, using OpenAI instead")
-            provider = "openai"
-        
+            print(f"   Falling back to Gemini instead")
+            logger.warning(f"Spoonacular provider requested but temporarily disabled, using Gemini instead")
+            provider = "gemini"
+
         api_key = None
-        
-        if provider == "openai":
-            api_key = settings.OPENAI_API_KEY
-        elif provider == "google":
+
+        if provider == "google":
             api_key = settings.GOOGLE_VISION_API_KEY
         elif provider == "gemini":
             api_key = settings.GOOGLE_GEMINI_API_KEY
@@ -261,9 +258,7 @@ async def recognize_product_from_image(
             
             # Более информативное сообщение об ошибке
             error_detail = "Не удалось распознать продукт на изображении"
-            if provider == "openai":
-                error_detail = "Не удалось распознать продукт. Возможные причины: неверный API ключ OpenAI, проблемы с доступом к API, или превышен лимит запросов. Проверьте настройки API ключа."
-            
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=error_detail
@@ -301,13 +296,13 @@ async def recognize_product_from_text_endpoint(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Определить КБЖУ блюда/продукта по текстовому названию с помощью AI (OpenAI gpt-4o-mini).
+    Определить КБЖУ блюда/продукта по текстовому названию с помощью Google Gemini.
     """
-    api_key = settings.OPENAI_API_KEY
+    api_key = settings.GOOGLE_GEMINI_API_KEY
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="OpenAI API ключ не настроен на сервере."
+            detail="Google Gemini API ключ не настроен на сервере."
         )
 
     product_data = await recognize_product_from_text(

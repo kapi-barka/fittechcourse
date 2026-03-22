@@ -511,6 +511,21 @@ export const uploadAPI = {
 }
 
 // Аналитика
+export interface WeightPrediction {
+  has_enough_data: boolean
+  reason?: string
+  goal_reached?: boolean
+  wrong_direction?: boolean
+  capped?: boolean
+  current_weight?: number
+  target_weight?: number
+  predicted_date?: string   // YYYY-MM-DD
+  days_remaining?: number
+  weekly_rate?: number      // кг/неделю, отрицательный = похудение
+  r_squared?: number
+  projection: Array<{ date: string; weight: number }>
+}
+
 export const analyticsAPI = {
   getTDEE: () =>
     api.get<{
@@ -520,7 +535,12 @@ export const analyticsAPI = {
       height_cm: number
       age: number
       activity_level: string
+      fitness_goal?: string | null
+      body_fat_pct?: number | null
     }>('/analytics/tdee'),
+
+  getWeightPrediction: () =>
+    api.get<WeightPrediction>('/analytics/weight-prediction'),
 }
 
 // AI-тренер (история и очистка; стрим через fetch напрямую)

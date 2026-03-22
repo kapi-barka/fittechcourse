@@ -4,6 +4,7 @@
 'use client'
 
 import { useState } from 'react'
+import { format } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
@@ -122,7 +123,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
         setIsLoading(true)
         setError(null)
         try {
-            await nutritionAPI.createLogFromBarcode({ barcode: scannedProduct.barcode!, weight_g: weightValue, meal_type: mealType })
+            await nutritionAPI.createLogFromBarcode({ barcode: scannedProduct.barcode!, weight_g: weightValue, meal_type: mealType, eaten_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss") })
             toast.success('Приём пищи добавлен')
             onSuccess()
             handleClose()
@@ -166,7 +167,7 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                     productId = createRes.data?.id
                 }
             }
-            await nutritionAPI.createLog({ product_id: productId, weight_g: weightValue, meal_type: mealType })
+            await nutritionAPI.createLog({ product_id: productId, weight_g: weightValue, meal_type: mealType, eaten_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss") })
             toast.success('Приём пищи добавлен')
             onSuccess()
             handleClose()

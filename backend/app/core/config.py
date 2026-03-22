@@ -107,12 +107,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
 
     # AI Recognition Services
-    OPENAI_API_KEY: Optional[str] = None
     GOOGLE_VISION_API_KEY: Optional[str] = None
     GOOGLE_GEMINI_API_KEY: Optional[str] = None  # Для Gemini API (генеративная модель с поддержкой промптов)
     SPOONACULAR_API_KEY: Optional[str] = None
     HUGGINGFACE_API_KEY: Optional[str] = None  # Опционально, для бесплатного tier не обязателен
-    PRODUCT_RECOGNITION_PROVIDER: str = "openai"  # openai, google, gemini (gemini-pro/flash), spoonacular, huggingface (нестабильно)
+    PRODUCT_RECOGNITION_PROVIDER: str = "gemini"  # gemini, google, spoonacular, huggingface (нестабильно)
 
     # Google Cloud / Vertex AI (опционально — для GCP-деплоя)
     # Если задан GOOGLE_CLOUD_PROJECT, AI-тренер использует Vertex AI SDK вместо прямого Gemini API

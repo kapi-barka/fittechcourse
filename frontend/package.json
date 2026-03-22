@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start",
     "lint": "next lint",
     "test:pwa": "node scripts/test-pwa.js",
@@ -34,6 +34,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.15"
   }

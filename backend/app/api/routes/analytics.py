@@ -2,10 +2,11 @@
 API роутер для аналитики и прогнозов
 """
 import math
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -106,5 +107,112 @@ async def get_tdee(
         "fitness_goal": profile.fitness_goal.value if profile.fitness_goal else None,
         "experience_level": profile.experience_level.value if profile.experience_level else None,
         "body_fat_pct": body_fat_pct,
+    }
+
+
+@router.get("/weight-prediction")
+async def get_weight_prediction(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Линейная регрессия по замерам веса → прогноз даты достижения целевого веса.
+    Возвращает точки проекции для отображения пунктирной линии на графике.
+    """
+    from app.models.metrics import BodyMetric
+
+    profile_result = await db.execute(
+        select(UserProfile).where(UserProfile.user_id == current_user.id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    target_weight = profile.target_weight if profile else None
+
+    if not target_weight:
+        return {"has_enough_data": False, "reason": "no_target", "projection": []}
+
+    metrics_result = await db.execute(
+        select(BodyMetric)
+        .where(BodyMetric.user_id == current_user.id)
+        .where(BodyMetric.weight.isnot(None))
+        .order_by(BodyMetric.date.asc())
+    )
+    metrics = metrics_result.scalars().all()
+
+    if len(metrics) < 2:
+        return {"has_enough_data": False, "reason": "need_more_data", "projection": []}
+
+    first_date = metrics[0].date
+    x = np.array([(m.date - first_date).days for m in metrics], dtype=float)
+    y = np.array([m.weight for m in metrics], dtype=float)
+
+    coeffs = np.polyfit(x, y, 1)
+    slope, intercept = coeffs[0], coeffs[1]
+
+    # R²
+    y_pred = np.polyval(coeffs, x)
+    ss_res = float(np.sum((y - y_pred) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r_squared = round(1 - ss_res / ss_tot, 2) if ss_tot > 0 else 0.0
+
+    current_weight = float(y[-1])
+    weekly_rate = round(float(slope) * 7, 2)
+
+    # Цель уже достигнута?
+    if abs(current_weight - target_weight) < 0.3:
+        return {
+            "has_enough_data": True, "goal_reached": True,
+            "current_weight": current_weight, "target_weight": target_weight,
+            "weekly_rate": weekly_rate, "r_squared": r_squared, "projection": [],
+        }
+
+    # Тренд в неправильном направлении?
+    going_wrong = (target_weight < current_weight and slope >= 0) or \
+                  (target_weight > current_weight and slope <= 0)
+    if going_wrong or abs(slope) < 0.001:
+        return {
+            "has_enough_data": True, "wrong_direction": True,
+            "current_weight": current_weight, "target_weight": target_weight,
+            "weekly_rate": weekly_rate, "r_squared": r_squared, "projection": [],
+        }
+
+    # Дата достижения цели
+    last_x = float(x[-1])
+    x_goal = (target_weight - intercept) / slope
+    days_to_goal = x_goal - last_x
+    goal_date = metrics[-1].date + timedelta(days=int(days_to_goal))
+
+    # Ограничиваем 2 годами
+    max_date = date.today() + timedelta(days=730)
+    capped = goal_date > max_date
+    if capped:
+        goal_date = max_date
+
+    days_remaining = (goal_date - date.today()).days
+
+    # Еженедельные точки проекции (от последнего замера до даты цели)
+    projection = []
+    cur = metrics[-1].date
+    while cur <= goal_date:
+        days_from_start = (cur - first_date).days
+        proj_w = round(float(slope) * days_from_start + float(intercept), 1)
+        projection.append({"date": cur.isoformat(), "weight": proj_w})
+        cur += timedelta(days=7)
+
+    # Гарантируем финальную точку точно на дате цели
+    if not projection or projection[-1]["date"] != goal_date.isoformat():
+        projection.append({"date": goal_date.isoformat(), "weight": round(target_weight, 1)})
+
+    return {
+        "has_enough_data": True,
+        "wrong_direction": False,
+        "goal_reached": False,
+        "capped": capped,
+        "current_weight": current_weight,
+        "target_weight": target_weight,
+        "predicted_date": goal_date.isoformat(),
+        "days_remaining": days_remaining,
+        "weekly_rate": weekly_rate,
+        "r_squared": r_squared,
+        "projection": projection,
     }
 

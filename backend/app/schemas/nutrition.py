@@ -40,7 +40,7 @@ class NutritionLogCreate(BaseModel):
     """Схема создания записи о питании"""
     product_id: UUID
     weight_g: float = Field(..., ge=1, le=10000, description="Вес порции в граммах (от 1 до 10000)")
-    eaten_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    eaten_at: Optional[datetime] = Field(default_factory=datetime.now)
     meal_type: Optional[str] = Field(None, pattern="^(breakfast|lunch|dinner|snack)$")
     notes: Optional[str] = None
 
@@ -93,7 +93,7 @@ class BarcodeLogCreate(BaseModel):
     """Схема создания лога из штрихкода"""
     barcode: str = Field(..., min_length=8, max_length=20)
     weight_g: float = Field(..., ge=1, le=10000, description="Вес порции в граммах (от 1 до 10000)")
-    eaten_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    eaten_at: Optional[datetime] = Field(default_factory=datetime.now)
     meal_type: Optional[str] = Field(None, pattern="^(breakfast|lunch|dinner|snack)$")
     notes: Optional[str] = None
 

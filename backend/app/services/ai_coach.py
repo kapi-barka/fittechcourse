@@ -371,28 +371,7 @@ def _make_executor(user_id: str, db: AsyncSession) -> Callable:
 # ────────────────────────────────────────────────────────────
 
 async def _get_available_gemini_model(api_key: str) -> Optional[tuple[str, str]]:
-    """Находит реально доступную модель для данного API ключа."""
-    import httpx
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        for api_ver in ("v1beta", "v1"):
-            url = f"https://generativelanguage.googleapis.com/{api_ver}/models?key={api_key}"
-            try:
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    continue
-                for model in resp.json().get("models", []):
-                    name = model.get("name", "")
-                    methods = model.get("supportedGenerationMethods", [])
-                    if "generateContent" not in methods:
-                        continue
-                    short = name.split("/")[-1]
-                    if any(k in short for k in ("flash", "pro", "gemini")):
-                        logger.info(f"AI coach model: {short} ({api_ver})")
-                        return api_ver, short
-            except Exception as exc:
-                logger.warning(f"ListModels {api_ver}: {exc}")
-    return None
+    return "v1beta", "gemini-2.5-flash"
 
 
 async def _gemini_request(
