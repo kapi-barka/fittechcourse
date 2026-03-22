@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { AuthGuard } from '@/components/AuthGuard'
@@ -214,7 +214,7 @@ function MyProgramCard({
 // ---------------------------------------------------------------------------
 // Главный компонент
 // ---------------------------------------------------------------------------
-export default function ProgramsPage() {
+function ProgramsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = (searchParams.get('tab') ?? 'catalog') as 'catalog' | 'my'
@@ -526,5 +526,19 @@ export default function ProgramsPage() {
         </main>
       </div>
     </AuthGuard>
+  )
+}
+
+export default function ProgramsPage() {
+  return (
+    <Suspense fallback={
+      <AuthGuard>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-muted-foreground text-sm">Загрузка...</div>
+        </div>
+      </AuthGuard>
+    }>
+      <ProgramsContent />
+    </Suspense>
   )
 }
