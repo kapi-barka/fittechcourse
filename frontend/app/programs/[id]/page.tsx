@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { MuscleMap } from '@/components/ui/MuscleMap'
 import { getDayName } from '@/lib/utils'
-import { translateMuscleGroup, translateMuscleGroups } from '@/lib/muscleGroups'
+import { translateMuscleGroups } from '@/lib/muscleGroups'
 import { toast } from 'react-toastify'
 import { Modal } from '@/components/ui/Modal'
 

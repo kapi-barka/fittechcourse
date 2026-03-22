@@ -34,14 +34,6 @@ import { toast } from 'react-toastify'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function getDifficultyColor(difficulty?: string | null) {
-  switch (difficulty) {
-    case 'beginner':    return 'text-green-400 border-green-400'
-    case 'intermediate': return 'text-yellow-400 border-yellow-400'
-    case 'advanced':    return 'text-red-400 border-red-400'
-    default:            return 'text-gray-400 border-gray-400'
-  }
-}
 
 function getDifficultyLabel(difficulty?: string | null) {
   switch (difficulty) {

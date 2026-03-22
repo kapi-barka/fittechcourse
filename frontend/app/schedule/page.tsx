@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   Play,
   Trophy,
-  Dumbbell,
   Info,
   RotateCcw
 } from 'lucide-react'
