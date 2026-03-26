@@ -44,6 +44,8 @@ _SYSTEM_PROMPT = f"""Ты — личный тренер. Отвечаешь ко
 
 ДАННЫЕ:
 - Перед ответом всегда запрашивай нужные инструменты.
+- При любом вопросе о тренировках, питании или прогрессе — СНАЧАЛА вызови get_user_profile, чтобы знать цель пользователя (набор массы / похудение / рекомпозиция и т.д.) и уровень опыта.
+- Все рекомендации должны соответствовать fitness_goal и experience_level пользователя.
 - Каждый тезис — конкретная цифра из данных. Никаких общих фраз.
 - "8 тренировок из 12 за месяц" — хорошо. "Тренируйся чаще" — плохо.
 - "98г белка при цели 160г" — хорошо. "Следи за белком" — плохо.
@@ -59,6 +61,8 @@ TOOL_DECLARATIONS = [
         "name": "get_user_profile",
         "description": (
             "Получить профиль пользователя: имя, возраст, рост, пол, "
+            "фитнес-цель (набор массы / похудение / поддержание / рельеф), "
+            "уровень опыта (новичок / средний / продвинутый), "
             "уровень активности, целевой вес, дневные цели по калориям и макронутриентам, "
             "целевые замеры тела."
         ),
@@ -153,6 +157,14 @@ async def _tool_get_user_profile(user_id: str, db: AsyncSession) -> dict:
         "moderately_active": "умеренная активность", "very_active": "высокая активность",
         "extremely_active": "очень высокая активность",
     }
+    fitness_goal_map = {
+        "weight_loss": "похудение", "muscle_gain": "набор мышечной массы",
+        "maintenance": "поддержание формы", "body_recomposition": "рекомпозиция тела",
+        "endurance": "развитие выносливости",
+    }
+    experience_map = {
+        "beginner": "новичок", "intermediate": "средний уровень", "advanced": "продвинутый",
+    }
 
     return {
         "name":            p.full_name if p else None,
@@ -161,6 +173,8 @@ async def _tool_get_user_profile(user_id: str, db: AsyncSession) -> dict:
         "age":             age(p.birth_date) if p else None,
         "height_cm":       p.height if p else None,
         "activity_level":  activity_map.get(str(p.activity_level or ""), str(p.activity_level)) if p else None,
+        "fitness_goal":    fitness_goal_map.get(str(p.fitness_goal.value if p and p.fitness_goal else ""), None) if p and p.fitness_goal else None,
+        "experience_level": experience_map.get(str(p.experience_level.value if p and p.experience_level else ""), None) if p and p.experience_level else None,
         "goals": {
             "target_weight_kg":    p.target_weight if p else None,
             "calories_per_day":    p.target_calories if p else None,
