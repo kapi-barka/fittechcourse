@@ -281,13 +281,6 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* Stat chips */}
-          <div className="flex gap-3 mb-6 flex-wrap">
-            <StatChip icon={Users}    label="Пользователей" value={users.length}    accent="text-blue-400" />
-            <StatChip icon={Dumbbell} label="Упражнений"    value={exercises.length} accent="text-orange-400" />
-            <StatChip icon={BookOpen} label="Статей"        value={articles.length} accent="text-emerald-400" />
-          </div>
-
           {/* Tabs */}
           <div className="flex gap-1 mb-6 border-b border-white/10 overflow-x-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
