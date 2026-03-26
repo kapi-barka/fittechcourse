@@ -63,10 +63,14 @@ MEASUREMENT_NAMES_RU: dict[str, str] = {
 async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
     """
     Возвращает список мышечных групп (lower-case), которые были
-    нагружены за последние 48 часов (через WorkoutLog → ProgramDetail → Exercise).
+    нагружены за последние 48 часов.
+    Источники: WorkoutLog (программы) + ExercisePerformanceLog (рекомендации / свободные).
     """
     try:
         since = datetime.utcnow() - timedelta(hours=48)
+        fatigued: set[str] = set()
+
+        # Источник 1: тренировки по программе
         logs_result = await db.execute(
             select(WorkoutLog).where(
                 and_(WorkoutLog.user_id == user_id, WorkoutLog.completed_at >= since)
@@ -74,7 +78,6 @@ async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
         )
         recent_logs = logs_result.scalars().all()
 
-        fatigued: set[str] = set()
         for log in recent_logs:
             details_result = await db.execute(
                 select(ProgramDetail)
@@ -90,26 +93,49 @@ async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
                 if detail.exercise and detail.exercise.muscle_groups:
                     fatigued.update(m.lower() for m in detail.exercise.muscle_groups)
 
+        # Источник 2: выполненные упражнения из рекомендаций и свободных тренировок
+        perf_result = await db.execute(
+            select(ExercisePerformanceLog)
+            .options(selectinload(ExercisePerformanceLog.exercise))
+            .where(
+                and_(
+                    ExercisePerformanceLog.user_id == user_id,
+                    ExercisePerformanceLog.logged_at >= since,
+                )
+            )
+        )
+        for perf in perf_result.scalars().all():
+            if perf.exercise and perf.exercise.muscle_groups:
+                fatigued.update(m.lower() for m in perf.exercise.muscle_groups)
+
         return list(fatigued)
     except Exception as e:
         logger.warning(f"_get_fatigued_muscles failed: {e}")
         return []
 
 
-def _compute_weak_points(profile: UserProfile | None, metric: BodyMetric | None) -> list[dict]:
+def _compute_weak_points(profile: UserProfile | None, metrics: list[BodyMetric]) -> list[dict]:
     """
     Возвращает список отстающих замеров, отсортированных по дефициту (убывание).
     Для талии — цель снижение (current > target), для остальных — рост (target > current).
+    Мёрджит последние 50 замеров: для каждого поля берётся последнее ненулевое значение.
     """
-    if not profile or not metric:
+    if not profile or not metrics:
         return []
 
+    def latest(field: str):
+        for m in metrics:
+            v = getattr(m, field, None)
+            if v is not None:
+                return v
+        return None
+
     checks = [
-        ("chest",  profile.target_chest,  metric.chest),
-        ("biceps", profile.target_biceps, metric.biceps),
-        ("hips",   profile.target_hips,   metric.hips),
-        ("thigh",  profile.target_thigh,  metric.thigh),
-        ("waist",  profile.target_waist,  metric.waist),
+        ("chest",  profile.target_chest,  latest("chest")),
+        ("biceps", profile.target_biceps, latest("biceps")),
+        ("hips",   profile.target_hips,   latest("hips")),
+        ("thigh",  profile.target_thigh,  latest("thigh")),
+        ("waist",  profile.target_waist,  latest("waist")),
     ]
 
     weak_points = []
@@ -203,7 +229,8 @@ async def _find_exercises(
             ]
             query = query.where(~or_(*exclude_cond))
 
-        result = await db.execute(query.limit(limit))
+        query = query.order_by(func.random()).limit(limit)
+        result = await db.execute(query)
         return result.scalars().all()
     except Exception as e:
         logger.warning(f"_find_exercises failed: {e}")
@@ -221,18 +248,18 @@ async def _generate(user_id: UUID, db: AsyncSession) -> WorkoutRecommendation:
     )
     profile = profile_result.scalar_one_or_none()
 
-    # Load latest body metric
+    # Load last 50 body metrics for merged weak-point analysis
     metric_result = await db.execute(
         select(BodyMetric)
         .where(BodyMetric.user_id == user_id)
         .order_by(desc(BodyMetric.date))
-        .limit(1)
+        .limit(50)
     )
-    latest_metric = metric_result.scalar_one_or_none()
+    recent_metrics = metric_result.scalars().all()
 
     # Analysis
     fatigued_muscles = await _get_fatigued_muscles(user_id, db)
-    weak_points      = _compute_weak_points(profile, latest_metric)
+    weak_points      = _compute_weak_points(profile, recent_metrics)
     nutrition_info   = await _get_nutrition_modifier(user_id, profile, db)
     volume_mod       = nutrition_info["volume_modifier"]
 

@@ -39,22 +39,38 @@ async def get_tdee(
             detail="Необходимо заполнить профиль (рост, дата рождения)"
         )
     
-    # Получаем последний вес
+    # Получаем последние записи и мержим: для каждого поля — последнее ненулевое
     from app.models.metrics import BodyMetric
-    weight_result = await db.execute(
+    recent_result = await db.execute(
         select(BodyMetric)
         .where(BodyMetric.user_id == current_user.id)
-        .where(BodyMetric.weight.isnot(None))
         .order_by(desc(BodyMetric.date))
-        .limit(1)
+        .limit(50)
     )
-    weight_metric = weight_result.scalar_one_or_none()
-    
-    if not weight_metric or not weight_metric.weight:
+    recent_records = recent_result.scalars().all()
+
+    def latest_value(field: str):
+        for rec in recent_records:
+            v = getattr(rec, field)
+            if v is not None:
+                return v
+        return None
+
+    weight_val = latest_value('weight')
+    if not weight_val:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Необходимо добавить замер веса"
         )
+
+    # Псевдо-объект для совместимости с расчётами ниже
+    class _Merged:
+        weight = weight_val
+        neck   = latest_value('neck')
+        waist  = latest_value('waist')
+        hips   = latest_value('hips')
+
+    weight_metric = _Merged()
     
     # Рассчитываем возраст
     age = (date.today() - profile.birth_date).days // 365

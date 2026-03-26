@@ -210,7 +210,7 @@ export default function DashboardPage() {
 
           {/* ── TDEE / BMR Chips ─────────────────────── */}
           {(tdeeData || latestMetric?.weight) && (
-            <div className="flex items-stretch gap-3">
+            <div className="flex items-stretch gap-3 flex-wrap">
               {tdeeData && (
                 <>
                   <StatChip
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                     <div className="space-y-3">
                       {/* Вес — крупно */}
                       {latestMetric.weight && (
-                        <div className="flex items-end gap-2 pb-3 border-b border-white/8">
+                        <div className="flex items-end gap-2 pb-3 border-b border-white/8 flex-wrap">
                           <span className="text-3xl font-bold">{latestMetric.weight}</span>
                           <span className="text-sm text-muted-foreground pb-1">кг</span>
                           {profile?.target_weight && (
@@ -359,11 +359,27 @@ export default function DashboardPage() {
                               / цель {profile.target_weight} кг
                             </span>
                           )}
+                          {tdeeData?.body_fat_pct != null && (
+                            <span className="ml-auto pb-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                              {tdeeData.body_fat_pct}% жира
+                            </span>
+                          )}
                         </div>
                       )}
 
                       {/* Остальные замеры */}
                       <div className="space-y-2.5">
+                        {tdeeData?.body_fat_pct != null ? (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Жир тела</span>
+                            <span className="font-medium text-cyan-400">{tdeeData.body_fat_pct}%</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Жир тела</span>
+                            <span className="text-muted-foreground/50 italic">добавьте замер шеи</span>
+                          </div>
+                        )}
                         {latestMetric.chest && (
                           <MeasurementRow label="Грудь" value={latestMetric.chest} target={profile?.target_chest} />
                         )}
@@ -417,7 +433,11 @@ export default function DashboardPage() {
 
         </main>
 
-        <GoalsModal isOpen={isGoalsModalOpen} onClose={(open) => setIsGoalsModalOpen(open)} />
+        <GoalsModal
+          isOpen={isGoalsModalOpen}
+          onClose={(open) => setIsGoalsModalOpen(open)}
+          onSaved={() => analyticsAPI.getWeightPrediction().then(r => setWeightPrediction(r.data)).catch(() => {})}
+        />
       </div>
     </AuthGuard>
   )

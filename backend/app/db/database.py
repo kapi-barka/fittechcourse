@@ -29,7 +29,7 @@ engine = create_async_engine(
     future=True,
     pool_pre_ping=True,  # Проверка соединения перед использованием
     poolclass=NullPool if not use_pool else None,  # Для pooler используем NullPool
-    connect_args=connect_args if connect_args else None,
+    connect_args=connect_args,
 )
 
 # Фабрика сессий для работы с БД

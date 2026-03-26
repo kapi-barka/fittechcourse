@@ -12,9 +12,10 @@ import { toast } from 'react-toastify'
 interface GoalsModalProps {
   isOpen: boolean
   onClose: (open: boolean) => void
+  onSaved?: () => void
 }
 
-export function GoalsModal({ isOpen, onClose }: GoalsModalProps) {
+export function GoalsModal({ isOpen, onClose, onSaved }: GoalsModalProps) {
   const { user, refreshUser } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -167,6 +168,7 @@ export function GoalsModal({ isOpen, onClose }: GoalsModalProps) {
       await usersAPI.updateProfile(updateData)
       await refreshUser()
       toast.success('Цели успешно обновлены')
+      onSaved?.()
       onClose(false)
     } catch (error) {
       console.error('Error updating goals:', error)

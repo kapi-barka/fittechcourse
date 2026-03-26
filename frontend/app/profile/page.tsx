@@ -3,90 +3,88 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/store/authStore'
 import { usersAPI, UserProfile } from '@/lib/api'
-import { Loader2, User as UserIcon, Target } from 'lucide-react'
+import { Loader2, Target, Scale, Flame, Beef, Droplets, Save } from 'lucide-react'
 import { toast } from 'react-toastify'
+
+// ── Section header ───────────────────────────────────────────────────────────
+function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+    </div>
+  )
+}
+
+// ── Hint text ────────────────────────────────────────────────────────────────
+function Hint({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-muted-foreground mt-1">{children}</p>
+}
 
 export default function ProfilePage() {
   const router = useRouter()
   const { user, fetchUser } = useAuthStore()
-  // const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     full_name: '',
     height: undefined,
     target_weight: undefined,
     target_calories: undefined,
+    target_proteins: undefined,
+    target_fats: undefined,
+    target_carbs: undefined,
   })
 
   useEffect(() => {
     if (user?.profile) {
       setFormData({
-        full_name: user.profile.full_name || '',
-        height: user.profile.height,
-        target_weight: user.profile.target_weight,
-        target_calories: user.profile.target_calories,
+        full_name:        user.profile.full_name        || '',
+        height:           user.profile.height,
+        target_weight:    user.profile.target_weight,
+        target_calories:  user.profile.target_calories,
+        target_proteins:  user.profile.target_proteins,
+        target_fats:      user.profile.target_fats,
+        target_carbs:     user.profile.target_carbs,
       })
     }
   }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target
-    let parsedValue: string | number | undefined = value
-
-    if (type === 'number') {
-      parsedValue = value === '' ? undefined : parseFloat(value)
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: parsedValue,
-    }))
+    const parsed = type === 'number' ? (value === '' ? undefined : parseFloat(value)) : value
+    setFormData(prev => ({ ...prev, [name]: parsed }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-    
-    // Валидация
+
     if (formData.target_weight !== undefined) {
-      const weight = typeof formData.target_weight === 'number' ? formData.target_weight : parseFloat(String(formData.target_weight))
-      if (isNaN(weight) || weight < 20 || weight > 300) {
-        setError('Целевой вес должен быть от 20 до 300 кг')
-        toast.error('Целевой вес должен быть от 20 до 300 кг')
+      const w = Number(formData.target_weight)
+      if (isNaN(w) || w < 20 || w > 300) {
+        toast.error('Целевой вес: от 20 до 300 кг')
         return
       }
     }
     if (formData.target_calories !== undefined) {
-      const calories = typeof formData.target_calories === 'number' ? formData.target_calories : parseInt(String(formData.target_calories))
-      if (isNaN(calories) || calories < 800 || calories > 8000) {
-        setError('Цель по калориям должна быть от 800 до 8000 ккал/день')
-        toast.error('Цель по калориям должна быть от 800 до 8000 ккал/день')
+      const c = Number(formData.target_calories)
+      if (isNaN(c) || c < 800 || c > 8000) {
+        toast.error('Калории: от 800 до 8000 ккал/день')
         return
       }
     }
-    
-    setIsSaving(true)
 
+    setIsSaving(true)
     try {
       await usersAPI.updateProfile(formData)
-      await fetchUser() // Refresh user data in store
-      toast.success('Профиль успешно обновлен!')
-      setSuccess('')
-      setError('')
-    } catch (err) {
-      console.error('Error updating profile:', err)
-      const errorMsg = 'Не удалось обновить профиль. Попробуйте позже.'
-      setError(errorMsg)
-      toast.error(errorMsg)
+      await fetchUser()
+      toast.success('Профиль успешно обновлён!')
+    } catch {
+      toast.error('Не удалось обновить профиль')
     } finally {
       setIsSaving(false)
     }
@@ -94,118 +92,157 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen">
+        <main className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
 
-        <main className="container mx-auto px-4 py-4 sm:py-8">
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100 flex items-center gap-3">
-              <UserIcon className="h-8 w-8" />
-              Мой Профиль
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <Target className="h-7 w-7 text-primary" />
+              Мои цели
             </h1>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => router.back()}>
+                Отмена
+              </Button>
+              <Button size="sm" onClick={handleSubmit} disabled={isSaving}>
+                {isSaving
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Save className="mr-2 h-4 w-4" />
+                }
+                Сохранить
+              </Button>
+            </div>
+          </div>
 
-            <form onSubmit={handleSubmit}>
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle>Личные данные</CardTitle>
-                  <CardDescription>
-                    Информация о вас для расчета показателей
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Personal */}
+            <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
+              <SectionHeader icon={Target} label="Личные данные" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80">Имя</label>
                   <Input
-                    label="Полное имя"
                     name="full_name"
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder="Иван Иванов"
+                    className="rounded-xl"
                   />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Рост (см)"
-                      name="height"
-                      type="number"
-                      value={formData.height || ''}
-                      onChange={handleChange}
-                      placeholder="175"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Мои Цели
-                  </CardTitle>
-                  <CardDescription>
-                    Установите цели, к которым вы стремитесь
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                    <Input
-                      label="Целевой вес (кг)"
-                      name="target_weight"
-                      type="number"
-                      step="0.1"
-                      value={formData.target_weight || ''}
-                      onChange={handleChange}
-                      placeholder="70.5"
-                        min="20"
-                        max="300"
-                    />
-                      <p className="text-xs text-muted-foreground mt-1">От 20 до 300 кг</p>
-                    </div>
-                    <div>
-                    <Input
-                      label="Цель по калориям (ккал/день)"
-                      name="target_calories"
-                      type="number"
-                      value={formData.target_calories || ''}
-                      onChange={handleChange}
-                      placeholder="2000"
-                        min="800"
-                        max="8000"
-                    />
-                      <p className="text-xs text-muted-foreground mt-1">От 800 до 8000 ккал/день</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {error && (
-                <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
-                  {error}
                 </div>
-              )}
-
-              {success && (
-                <div className="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
-                  {success}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80">Рост (см)</label>
+                  <Input
+                    name="height"
+                    type="number"
+                    value={formData.height || ''}
+                    onChange={handleChange}
+                    placeholder="175"
+                    className="rounded-xl"
+                  />
                 </div>
-              )}
-
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => router.back()}
-                >
-                  Отмена
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Сохранить изменения
-                </Button>
               </div>
-            </form>
-          </div>
+            </div>
+
+            {/* Weight & calories */}
+            <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
+              <SectionHeader icon={Scale} label="Вес и калории" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
+                    <Scale className="h-3.5 w-3.5 text-violet-400" />
+                    Целевой вес (кг)
+                  </label>
+                  <Input
+                    name="target_weight"
+                    type="number"
+                    step="0.1"
+                    min="20" max="300"
+                    value={formData.target_weight || ''}
+                    onChange={handleChange}
+                    placeholder="70.5"
+                    className="rounded-xl"
+                  />
+                  <Hint>От 20 до 300 кг</Hint>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
+                    <Flame className="h-3.5 w-3.5 text-orange-400" />
+                    Калории (ккал/день)
+                  </label>
+                  <Input
+                    name="target_calories"
+                    type="number"
+                    min="800" max="8000"
+                    value={formData.target_calories || ''}
+                    onChange={handleChange}
+                    placeholder="2000"
+                    className="rounded-xl"
+                  />
+                  <Hint>От 800 до 8000 ккал/день</Hint>
+                </div>
+              </div>
+            </div>
+
+            {/* Macros */}
+            <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
+              <SectionHeader icon={Beef} label="Макронутриенты (г/день)" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
+                    <Beef className="h-3.5 w-3.5 text-blue-400" />Белки
+                  </label>
+                  <Input
+                    name="target_proteins"
+                    type="number"
+                    min="0"
+                    value={formData.target_proteins || ''}
+                    onChange={handleChange}
+                    placeholder="150"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
+                    <Droplets className="h-3.5 w-3.5 text-yellow-400" />Жиры
+                  </label>
+                  <Input
+                    name="target_fats"
+                    type="number"
+                    min="0"
+                    value={formData.target_fats || ''}
+                    onChange={handleChange}
+                    placeholder="65"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
+                    <Flame className="h-3.5 w-3.5 text-emerald-400" />Углеводы
+                  </label>
+                  <Input
+                    name="target_carbs"
+                    type="number"
+                    min="0"
+                    value={formData.target_carbs || ''}
+                    onChange={handleChange}
+                    placeholder="250"
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </form>
         </main>
       </div>
     </AuthGuard>
   )
 }
-

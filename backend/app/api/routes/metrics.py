@@ -51,23 +51,45 @@ async def get_latest_metric(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Получить последний замер
+    Получить последний замер. Для каждого поля берётся последнее
+    ненулевое значение из истории, чтобы частичные записи не обнуляли
+    ранее внесённые данные.
     """
     result = await db.execute(
         select(BodyMetric)
         .where(BodyMetric.user_id == current_user.id)
         .order_by(BodyMetric.date.desc())
-        .limit(1)
+        .limit(50)
     )
-    metric = result.scalar_one_or_none()
-    
-    if not metric:
+    records = result.scalars().all()
+
+    if not records:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Замеры не найдены"
         )
-    
-    return metric
+
+    latest = records[0]
+    MERGE_FIELDS = ('weight', 'chest', 'waist', 'hips', 'biceps', 'thigh', 'neck')
+
+    merged = {
+        'id':         latest.id,
+        'user_id':    latest.user_id,
+        'date':       latest.date,
+        'photo_url':  latest.photo_url,
+        'notes':      latest.notes,
+    }
+    for field in MERGE_FIELDS:
+        value = getattr(latest, field)
+        if value is None:
+            for rec in records[1:]:
+                v = getattr(rec, field)
+                if v is not None:
+                    value = v
+                    break
+        merged[field] = value
+
+    return merged
 
 
 @router.post("/", response_model=BodyMetricResponse, status_code=status.HTTP_201_CREATED)
