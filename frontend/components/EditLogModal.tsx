@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
@@ -41,18 +41,7 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
     }
   }, [log])
 
-  useEffect(() => {
-    if (searchQuery.length > 2) {
-      const timeoutId = setTimeout(() => {
-        searchProducts()
-      }, 500)
-      return () => clearTimeout(timeoutId)
-    } else {
-      setProducts([])
-    }
-  }, [searchQuery])
-
-  const searchProducts = async () => {
+  const searchProducts = useCallback(async () => {
     setIsSearching(true)
     try {
       const response = await nutritionAPI.listProducts({ search: searchQuery })
@@ -62,7 +51,18 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (searchQuery.length > 2) {
+      const timeoutId = setTimeout(() => {
+        searchProducts()
+      }, 500)
+      return () => clearTimeout(timeoutId)
+    } else {
+      setProducts([])
+    }
+  }, [searchQuery, searchProducts])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

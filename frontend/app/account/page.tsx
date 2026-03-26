@@ -19,12 +19,9 @@ import {
   Ruler,
   Calendar,
   Activity,
-  Target,
-  Dumbbell,
   Mail,
 } from 'lucide-react'
 import { toast } from 'react-toastify'
-import { cn } from '@/lib/utils'
 
 // ── Styled select ────────────────────────────────────────────────────────────
 function SelectField({
