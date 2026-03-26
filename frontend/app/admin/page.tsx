@@ -34,31 +34,6 @@ import { ArticleForm } from '@/components/admin/ArticleForm'
 import { toast } from 'react-toastify'
 import { cn } from '@/lib/utils'
 
-// ── Stat chip ────────────────────────────────────────────────────────────────
-function StatChip({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ElementType
-  label: string
-  value: number | string
-  accent: string
-}) {
-  return (
-    <div className="flex-1 flex items-center gap-3 rounded-xl border border-white/8 bg-card/60 px-4 py-3 min-w-0">
-      <div className={cn('p-2 rounded-lg bg-white/5', accent)}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold leading-tight">{value}</p>
-      </div>
-    </div>
-  )
-}
-
 // ── User initials avatar ─────────────────────────────────────────────────────
 function UserAvatar({ name, email }: { name?: string | null; email: string }) {
   const letters = name
