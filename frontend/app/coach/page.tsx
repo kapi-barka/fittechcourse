@@ -23,8 +23,8 @@ interface Message {
 
 const QUICK_PROMPTS = [
   { icon: TrendingUp, text: 'Как мой прогресс за последний месяц?' },
+  { icon: Utensils,   text: 'Что я ел вчера?' },
   { icon: Dumbbell,   text: 'Дай лёгкую тренировку на сегодня' },
-  { icon: Utensils,   text: 'Что поесть сегодня, чтобы добрать белок?' },
   { icon: Zap,        text: 'Почему у меня не растут показатели?' },
 ]
 

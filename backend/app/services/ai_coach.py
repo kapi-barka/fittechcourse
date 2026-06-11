@@ -44,7 +44,9 @@ _SYSTEM_PROMPT = f"""Ты — личный тренер. Отвечаешь ко
 
 ДАННЫЕ:
 - Перед ответом всегда запрашивай нужные инструменты.
+
 - При любом вопросе о тренировках, питании или прогрессе — СНАЧАЛА вызови get_user_profile, чтобы знать цель пользователя (набор массы / похудение / рекомпозиция и т.д.) и уровень опыта.
+- Для трендов питания за период — get_nutrition_summary; для конкретных продуктов и приёмов пищи («что ел вчера», «что на завтрак») — get_nutrition_logs.
 - Все рекомендации должны соответствовать fitness_goal и experience_level пользователя.
 - Каждый тезис — конкретная цифра из данных. Никаких общих фраз.
 - "8 тренировок из 12 за месяц" — хорошо. "Тренируйся чаще" — плохо.
@@ -98,6 +100,28 @@ TOOL_DECLARATIONS = [
                     "type": "INTEGER",
                     "description": "За сколько дней назад (по умолчанию 7)",
                 }
+            },
+        },
+    },
+    {
+        "name": "get_nutrition_logs",
+        "description": (
+            "Получить детальные записи дневника питания: продукт, порция в граммах, "
+            "тип приёма пищи (завтрак/обед/ужин/перекус), дата и время, калории порции. "
+            "Используй, когда пользователь спрашивает, что он ел, какие были приёмы пищи "
+            "за конкретный день или период."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "days": {
+                    "type": "INTEGER",
+                    "description": "За сколько последних дней показать записи (по умолчанию 7, игнорируется если указан target_date)",
+                },
+                "target_date": {
+                    "type": "STRING",
+                    "description": "Конкретная дата в формате YYYY-MM-DD (например день «вчера»). Только записи за этот день.",
+                },
             },
         },
     },
@@ -269,6 +293,74 @@ async def _tool_get_nutrition_summary(user_id: str, db: AsyncSession, days: int 
     }
 
 
+_MEAL_TYPE_LABELS = {
+    "breakfast": "завтрак",
+    "lunch": "обед",
+    "dinner": "ужин",
+    "snack": "перекус",
+    "other": "другое",
+}
+
+
+async def _tool_get_nutrition_logs(
+    user_id: str,
+    db: AsyncSession,
+    days: int = 7,
+    target_date: Optional[str] = None,
+) -> dict:
+    from app.models.nutrition import NutritionLog, FoodProduct
+
+    query = (
+        select(NutritionLog, FoodProduct)
+        .join(FoodProduct, NutritionLog.product_id == FoodProduct.id)
+        .where(NutritionLog.user_id == user_id)
+    )
+
+    period_label: str
+    if target_date:
+        try:
+            day = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            return {"error": "target_date должен быть в формате YYYY-MM-DD", "entries": []}
+        day_start = datetime.combine(day, datetime.min.time())
+        day_end = datetime.combine(day, datetime.max.time())
+        query = query.where(
+            NutritionLog.eaten_at >= day_start,
+            NutritionLog.eaten_at <= day_end,
+        )
+        period_label = day.strftime("%d.%m.%Y")
+    else:
+        since = datetime.combine(date.today() - timedelta(days=days), datetime.min.time())
+        query = query.where(NutritionLog.eaten_at >= since)
+        period_label = f"последние {days} дн."
+
+    res = await db.execute(
+        query.order_by(desc(NutritionLog.eaten_at)).limit(80)
+    )
+    rows = res.all()
+
+    entries = []
+    for log, prod in rows:
+        factor = log.weight_g / 100.0
+        entries.append({
+            "date": log.eaten_at.strftime("%d.%m.%Y"),
+            "time": log.eaten_at.strftime("%H:%M"),
+            "meal_type": _MEAL_TYPE_LABELS.get(log.meal_type or "", log.meal_type or "—"),
+            "product": prod.name,
+            "brand": prod.brand,
+            "weight_g": round(log.weight_g, 1),
+            "calories": round(prod.calories * factor, 1),
+            "proteins_g": round(prod.proteins * factor, 1),
+            "notes": log.notes,
+        })
+
+    return {
+        "period": period_label,
+        "total_entries": len(entries),
+        "entries": entries,
+    }
+
+
 async def _tool_get_body_metrics(user_id: str, db: AsyncSession, days: int = 90) -> dict:
     from app.models.metrics import BodyMetric
     from app.models.user import UserProfile
@@ -368,6 +460,15 @@ def _make_executor(user_id: str, db: AsyncSession) -> Callable:
                 return await _tool_get_workout_history(user_id, db, days)
             elif name == "get_nutrition_summary":
                 return await _tool_get_nutrition_summary(user_id, db, days)
+            elif name == "get_nutrition_logs":
+                target_date = args.get("target_date")
+                if isinstance(target_date, str):
+                    target_date = target_date.strip() or None
+                else:
+                    target_date = None
+                return await _tool_get_nutrition_logs(
+                    user_id, db, days=days, target_date=target_date
+                )
             elif name == "get_body_metrics":
                 return await _tool_get_body_metrics(user_id, db, days)
             elif name == "get_active_program":
