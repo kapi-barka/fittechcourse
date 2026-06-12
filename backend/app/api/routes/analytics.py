@@ -146,13 +146,31 @@ async def get_weight_prediction(
     if not target_weight:
         return {"has_enough_data": False, "reason": "no_target", "projection": []}
 
-    metrics_result = await db.execute(
+    all_result = await db.execute(
         select(BodyMetric)
         .where(BodyMetric.user_id == current_user.id)
         .where(BodyMetric.weight.isnot(None))
         .order_by(BodyMetric.date.asc())
     )
-    metrics = metrics_result.scalars().all()
+    all_metrics = all_result.scalars().all()
+
+    if len(all_metrics) < 2:
+        return {"has_enough_data": False, "reason": "need_more_data", "projection": []}
+
+    # Регрессия только по недавним замерам — как на графике дашборда (30 дней).
+    # Старые записи (другая фаза: похудение vs набор) иначе переворачивают тренд.
+    metrics = []
+    lookback_days = 30
+    for window in (30, 90, None):
+        if window is None:
+            candidate = all_metrics
+        else:
+            since = date.today() - timedelta(days=window)
+            candidate = [m for m in all_metrics if m.date >= since]
+        if len(candidate) >= 2:
+            metrics = candidate
+            lookback_days = window if window is not None else None
+            break
 
     if len(metrics) < 2:
         return {"has_enough_data": False, "reason": "need_more_data", "projection": []}
@@ -188,7 +206,8 @@ async def get_weight_prediction(
         return {
             "has_enough_data": True, "wrong_direction": True,
             "current_weight": current_weight, "target_weight": target_weight,
-            "weekly_rate": weekly_rate, "r_squared": r_squared, "projection": [],
+            "weekly_rate": weekly_rate, "r_squared": r_squared,
+            "lookback_days": lookback_days, "projection": [],
         }
 
     # Дата достижения цели
@@ -229,6 +248,7 @@ async def get_weight_prediction(
         "days_remaining": days_remaining,
         "weekly_rate": weekly_rate,
         "r_squared": r_squared,
+        "lookback_days": lookback_days,
         "projection": projection,
     }
 
