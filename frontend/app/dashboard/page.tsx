@@ -91,10 +91,10 @@ function StatChip({
   sub?: string
 }) {
   return (
-    <div className="flex flex-col justify-center rounded-xl border border-white/8 bg-card/60 px-4 py-3">
+    <div className="flex w-[140px] shrink-0 flex-col justify-center rounded-xl border border-white/8 bg-card/60 px-4 py-3">
       {label && <p className="text-xs text-muted-foreground mb-0.5">{label}</p>}
       <p className="text-sm font-bold leading-snug whitespace-normal">{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-normal">{sub}</p>}
+      {sub && <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-normal leading-tight">{sub}</p>}
     </div>
   )
 }
@@ -348,27 +348,11 @@ export default function DashboardPage() {
                               / цель {profile.target_weight} кг
                             </span>
                           )}
-                          {tdeeData?.body_fat_pct != null && (
-                            <span className="ml-auto pb-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                              {tdeeData.body_fat_pct}% жира
-                            </span>
-                          )}
                         </div>
                       )}
 
                       {/* Остальные замеры */}
                       <div className="space-y-2.5">
-                        {tdeeData?.body_fat_pct != null ? (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Жир тела</span>
-                            <span className="font-medium text-cyan-400">{tdeeData.body_fat_pct}%</span>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Жир тела</span>
-                            <span className="text-muted-foreground/50 italic">добавьте замер шеи</span>
-                          </div>
-                        )}
                         {latestMetric.chest && (
                           <MeasurementRow label="Грудь" value={latestMetric.chest} target={profile?.target_chest} />
                         )}
