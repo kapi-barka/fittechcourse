@@ -18,14 +18,19 @@ import {
   Sun, UtensilsCrossed, Moon, Coffee, Droplet,
   Edit, Beef, Droplets, Wheat, ChevronDown,
 } from 'lucide-react'
+import { format } from 'date-fns'
 import { formatDate, round, cn } from '@/lib/utils'
 import { toast } from 'react-toastify'
 
 // ── Утилиты ─────────────────────────────────────────────────
 
-const TODAY = new Date()
-const TODAY_STR = TODAY.toISOString().split('T')[0]
-const TODAY_LABEL = TODAY.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+function todayDateStr() {
+  return format(new Date(), 'yyyy-MM-dd')
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
 
 const MEAL_CONFIG: Record<string, { label: string; icon: React.ElementType; accent: string; bg: string }> = {
   breakfast: { label: 'Завтрак',  icon: Sun,            accent: 'border-yellow-400/60', bg: 'bg-yellow-400/10' },
@@ -179,7 +184,7 @@ function DiaryContent() {
 
   const [newMetric, setNewMetric] = useState({
     weight: '', chest: '', waist: '', hips: '', biceps: '', thigh: '', neck: '',
-    date: TODAY_STR,
+    date: todayDateStr(),
   })
 
   useEffect(() => {
@@ -193,10 +198,11 @@ function DiaryContent() {
 
   const fetchNutrition = async () => {
     setIsLoading(true)
+    const dateStr = todayDateStr()
     try {
       const [logsRes, sumRes] = await Promise.all([
-        nutritionAPI.listLogs({ from_date: TODAY_STR, to_date: TODAY_STR }),
-        nutritionAPI.getDailySummary(TODAY_STR),
+        nutritionAPI.listLogs({ from_date: dateStr, to_date: dateStr }),
+        nutritionAPI.getDailySummary(dateStr),
       ])
       setNutritionLogs(logsRes.data)
       setDailySummary(sumRes.data)
@@ -223,7 +229,7 @@ function DiaryContent() {
         thigh:   newMetric.thigh   ? parseFloat(newMetric.thigh)   : undefined,
         neck:    newMetric.neck    ? parseFloat(newMetric.neck)    : undefined,
       })
-      setNewMetric({ weight: '', chest: '', waist: '', hips: '', biceps: '', thigh: '', neck: '', date: TODAY_STR })
+      setNewMetric({ weight: '', chest: '', waist: '', hips: '', biceps: '', thigh: '', neck: '', date: todayDateStr() })
       fetchMetrics()
       toast.success('Замер добавлен')
     } catch { toast.error('Ошибка при добавлении замера') }
@@ -282,7 +288,7 @@ function DiaryContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Сегодня</p>
-                <h1 className="text-lg font-bold capitalize">{TODAY_LABEL}</h1>
+                <h1 className="text-lg font-bold capitalize">{todayLabel()}</h1>
               </div>
               <button
                 onClick={() => setIsAddMealModalOpen(true)}
