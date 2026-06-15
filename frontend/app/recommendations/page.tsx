@@ -4,6 +4,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { format } from 'date-fns'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Button } from '@/components/ui/Button'
 import { recommendationsAPI, exercisesAPI, WorkoutRecommendation, RecommendedExercise, Exercise } from '@/lib/api'
@@ -95,6 +96,10 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   skipped:   { label: 'Пропущена', cls: 'bg-white/5 text-muted-foreground border-white/10' },
 }
 
+function todayDateStr() {
+  return format(new Date(), 'yyyy-MM-dd')
+}
+
 export default function RecommendationsPage() {
   const [rec, setRec] = useState<WorkoutRecommendation | null>(null)
   const [history, setHistory] = useState<WorkoutRecommendation[]>([])
@@ -112,8 +117,9 @@ export default function RecommendationsPage() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
+      const dateStr = todayDateStr()
       const [todayRes, histRes, exRes] = await Promise.all([
-        recommendationsAPI.getToday(),
+        recommendationsAPI.getToday(dateStr),
         recommendationsAPI.getHistory({ limit: 6 }),
         exercisesAPI.list(),
       ])
@@ -132,7 +138,7 @@ export default function RecommendationsPage() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      const res = await recommendationsAPI.generate()
+      const res = await recommendationsAPI.generate(todayDateStr())
       setRec(res.data)
       setCompletedExercises(new Set())
       toast.success('Новая рекомендация сгенерирована')

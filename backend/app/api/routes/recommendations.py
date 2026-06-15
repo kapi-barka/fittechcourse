@@ -155,15 +155,19 @@ def _compute_weak_points(profile: UserProfile | None, metrics: list[BodyMetric])
     return sorted(weak_points, key=lambda x: x["deficit"], reverse=True)
 
 
-async def _get_nutrition_modifier(user_id: UUID, profile: Optional[UserProfile], db: AsyncSession) -> dict:
+async def _get_nutrition_modifier(
+    user_id: UUID,
+    profile: Optional[UserProfile],
+    db: AsyncSession,
+    reference_date: Optional[date] = None,
+) -> dict:
     """
     Вычисляет модификатор объёма нагрузки на основе вчерашнего потребления белка.
     """
     _default = {"yesterday_protein": 0.0, "target_protein": None, "protein_ratio": 1.0, "volume_modifier": "normal"}
     try:
-        yesterday = date.today() - timedelta(days=1)
-        start = datetime.combine(yesterday, datetime.min.time())
-        end   = datetime.combine(yesterday, datetime.max.time())
+        today = reference_date or date.today()
+        yesterday = today - timedelta(days=1)
 
         logs_result = await db.execute(
             select(NutritionLog)
@@ -171,8 +175,7 @@ async def _get_nutrition_modifier(user_id: UUID, profile: Optional[UserProfile],
             .where(
                 and_(
                     NutritionLog.user_id == user_id,
-                    NutritionLog.eaten_at >= start,
-                    NutritionLog.eaten_at <= end,
+                    func.date(NutritionLog.eaten_at) == yesterday,
                 )
             )
         )
@@ -241,7 +244,11 @@ async def _find_exercises(
 # Core recommendation engine
 # ──────────────────────────────────────────────────────
 
-async def _generate(user_id: UUID, db: AsyncSession) -> WorkoutRecommendation:
+async def _generate(
+    user_id: UUID,
+    db: AsyncSession,
+    reference_date: Optional[date] = None,
+) -> WorkoutRecommendation:
     # Load profile
     profile_result = await db.execute(
         select(UserProfile).where(UserProfile.user_id == user_id)
@@ -260,11 +267,12 @@ async def _generate(user_id: UUID, db: AsyncSession) -> WorkoutRecommendation:
     # Analysis
     fatigued_muscles = await _get_fatigued_muscles(user_id, db)
     weak_points      = _compute_weak_points(profile, recent_metrics)
-    nutrition_info   = await _get_nutrition_modifier(user_id, profile, db)
+    nutrition_info   = await _get_nutrition_modifier(user_id, profile, db, reference_date)
     volume_mod       = nutrition_info["volume_modifier"]
 
     context = {
         "analyzed_at":    datetime.utcnow().isoformat(),
+        "reference_date": (reference_date or date.today()).isoformat(),
         "fatigued_muscles": fatigued_muscles,
         "weak_points":    weak_points,
         "nutrition":      nutrition_info,
@@ -359,26 +367,27 @@ async def _generate(user_id: UUID, db: AsyncSession) -> WorkoutRecommendation:
 
 @router.get("/today", response_model=WorkoutRecommendationResponse)
 async def get_today_recommendation(
+    target_date: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Вернуть сегодняшнюю рекомендацию или сгенерировать новую."""
+    """Вернуть рекомендацию за день или сгенерировать новую."""
     user_id = current_user.id  # cache before try to avoid MissingGreenlet on expired ORM object
     try:
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        target = target_date or date.today()
         result = await db.execute(
             select(WorkoutRecommendation)
             .where(
                 and_(
                     WorkoutRecommendation.user_id == user_id,
-                    WorkoutRecommendation.generated_at >= today_start,
+                    func.date(WorkoutRecommendation.generated_at) == target,
                     WorkoutRecommendation.status != RecommendationStatus.SKIPPED,
                 )
             )
             .order_by(desc(WorkoutRecommendation.generated_at))
         )
         existing = result.scalars().first()
-        return existing if existing else await _generate(user_id, db)
+        return existing if existing else await _generate(user_id, db, reference_date=target)
     except HTTPException:
         raise
     except Exception as e:
@@ -389,13 +398,14 @@ async def get_today_recommendation(
 
 @router.post("/generate", response_model=WorkoutRecommendationResponse)
 async def force_generate(
+    target_date: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Принудительно сгенерировать новую рекомендацию."""
     user_id = current_user.id
     try:
-        return await _generate(user_id, db)
+        return await _generate(user_id, db, reference_date=target_date or date.today())
     except HTTPException:
         raise
     except Exception as e:

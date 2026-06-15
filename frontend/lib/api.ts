@@ -287,11 +287,11 @@ export const scheduleAPI = {
 
 // Рекомендации
 export const recommendationsAPI = {
-  getToday: () =>
-    api.get<WorkoutRecommendation>('/recommendations/today'),
+  getToday: (date?: string) =>
+    api.get<WorkoutRecommendation>('/recommendations/today', { params: { target_date: date } }),
 
-  generate: () =>
-    api.post<WorkoutRecommendation>('/recommendations/generate'),
+  generate: (date?: string) =>
+    api.post<WorkoutRecommendation>('/recommendations/generate', undefined, { params: { target_date: date } }),
 
   accept: (id: string) =>
     api.post(`/recommendations/${id}/accept`),
