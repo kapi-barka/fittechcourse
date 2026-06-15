@@ -21,7 +21,6 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { subDays, format } from 'date-fns'
-import { cn } from '@/lib/utils'
 
 // ── Calorie Ring (SVG) ──────────────────────────────────────────────
 function CalorieRing({
@@ -86,18 +85,16 @@ function StatChip({
   label,
   value,
   sub,
-  accent,
 }: {
-  label: string
+  label?: string
   value: string
   sub?: string
-  accent: string
 }) {
   return (
-    <div className="flex-1 flex flex-col justify-center rounded-xl border border-white/8 bg-card/60 px-4 py-3 min-w-0">
-      <p className={cn('text-xs font-medium mb-0.5', accent)}>{label}</p>
-      <p className="text-sm font-bold leading-tight truncate">{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{sub}</p>}
+    <div className="flex flex-col justify-center rounded-xl border border-white/8 bg-card/60 px-4 py-3">
+      {label && <p className="text-xs text-muted-foreground mb-0.5">{label}</p>}
+      <p className="text-sm font-bold leading-snug whitespace-normal">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground mt-0.5 whitespace-normal">{sub}</p>}
     </div>
   )
 }
@@ -217,42 +214,34 @@ export default function DashboardPage() {
                     label="BMR"
                     value={`${Math.round(tdeeData.bmr)} ккал`}
                     sub="базовый обмен"
-                    accent="text-blue-400"
                   />
                   <StatChip
                     label="TDEE"
                     value={`${Math.round(tdeeData.tdee)} ккал`}
                     sub="с учётом активности"
-                    accent="text-emerald-400"
                   />
                   <StatChip
-                    label="Активность"
                     value={activityLabels[tdeeData.activity_level] || tdeeData.activity_level}
-                    accent="text-orange-400"
+                    sub="активность"
                   />
                   {tdeeData.fitness_goal && (
                     <StatChip
-                      label="Цель"
                       value={goalLabels[tdeeData.fitness_goal] || tdeeData.fitness_goal}
-                      accent="text-pink-400"
+                      sub="цель"
                     />
                   )}
                   {tdeeData.body_fat_pct !== null && tdeeData.body_fat_pct !== undefined && (
                     <StatChip
-                      label="Жир тела"
                       value={`${tdeeData.body_fat_pct}%`}
-                      sub="Navy formula"
-                      accent="text-cyan-400"
+                      sub="жир тела"
                     />
                   )}
                 </>
               )}
               {latestMetric?.weight && (
                 <StatChip
-                  label="Вес"
                   value={`${latestMetric.weight} кг`}
-                  sub={profile?.target_weight ? `цель: ${profile.target_weight} кг` : undefined}
-                  accent="text-violet-400"
+                  sub={profile?.target_weight ? `цель: ${profile.target_weight} кг` : 'вес'}
                 />
               )}
               <Button
