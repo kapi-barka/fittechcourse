@@ -245,6 +245,9 @@ export interface WorkoutRecommendation {
     }>
     nutrition: {
       yesterday_protein: number
+      today_protein?: number
+      display_protein?: number
+      protein_label?: 'today' | 'yesterday'
       target_protein: number | null
       protein_ratio: number
       volume_modifier: 'low' | 'normal' | 'high'

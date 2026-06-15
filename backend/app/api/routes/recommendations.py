@@ -155,6 +155,25 @@ def _compute_weak_points(profile: UserProfile | None, metrics: list[BodyMetric])
     return sorted(weak_points, key=lambda x: x["deficit"], reverse=True)
 
 
+async def _sum_protein_for_day(user_id: UUID, day: date, db: AsyncSession) -> float:
+    logs_result = await db.execute(
+        select(NutritionLog)
+        .options(selectinload(NutritionLog.product))
+        .where(
+            and_(
+                NutritionLog.user_id == user_id,
+                func.date(NutritionLog.eaten_at) == day,
+            )
+        )
+    )
+    logs = logs_result.scalars().all()
+    return sum(
+        (log.product.proteins * log.weight_g / 100)
+        for log in logs
+        if log.product and log.product.proteins
+    )
+
+
 async def _get_nutrition_modifier(
     user_id: UUID,
     profile: Optional[UserProfile],
@@ -163,35 +182,36 @@ async def _get_nutrition_modifier(
 ) -> dict:
     """
     Вычисляет модификатор объёма нагрузки на основе вчерашнего потребления белка.
+    Если за вчера нет записей — использует сегодняшний день (для демо и начала дня).
     """
-    _default = {"yesterday_protein": 0.0, "target_protein": None, "protein_ratio": 1.0, "volume_modifier": "normal"}
+    _default = {
+        "yesterday_protein": 0.0,
+        "today_protein": 0.0,
+        "display_protein": 0.0,
+        "protein_label": "yesterday",
+        "target_protein": None,
+        "protein_ratio": 1.0,
+        "volume_modifier": "normal",
+    }
     try:
         today = reference_date or date.today()
         yesterday = today - timedelta(days=1)
 
-        logs_result = await db.execute(
-            select(NutritionLog)
-            .options(selectinload(NutritionLog.product))
-            .where(
-                and_(
-                    NutritionLog.user_id == user_id,
-                    func.date(NutritionLog.eaten_at) == yesterday,
-                )
-            )
-        )
-        logs = logs_result.scalars().all()
+        yesterday_protein = await _sum_protein_for_day(user_id, yesterday, db)
+        today_protein = await _sum_protein_for_day(user_id, today, db)
 
-        yesterday_protein = sum(
-            (log.product.proteins * log.weight_g / 100)
-            for log in logs
-            if log.product and log.product.proteins
-        )
+        use_today = yesterday_protein <= 0 and today_protein > 0
+        protein_for_modifier = today_protein if use_today else yesterday_protein
+        display_protein = protein_for_modifier
 
         target_protein = profile.target_proteins if profile and profile.target_proteins else None
-        ratio = (yesterday_protein / target_protein) if target_protein and target_protein > 0 else 1.0
+        ratio = (protein_for_modifier / target_protein) if target_protein and target_protein > 0 else 1.0
 
         return {
             "yesterday_protein": round(yesterday_protein, 1),
+            "today_protein": round(today_protein, 1),
+            "display_protein": round(display_protein, 1),
+            "protein_label": "today" if use_today else "yesterday",
             "target_protein": target_protein,
             "protein_ratio": round(ratio, 2),
             "volume_modifier": "low" if ratio < 0.7 else ("high" if ratio > 1.1 else "normal"),
@@ -199,6 +219,24 @@ async def _get_nutrition_modifier(
     except Exception as e:
         logger.warning(f"_get_nutrition_modifier failed: {e}")
         return _default
+
+
+async def _attach_fresh_nutrition_context(
+    rec: WorkoutRecommendation,
+    user_id: UUID,
+    db: AsyncSession,
+    reference_date: date,
+) -> WorkoutRecommendation:
+    """Обновляет блок nutrition в context актуальными данными питания."""
+    profile_result = await db.execute(
+        select(UserProfile).where(UserProfile.user_id == user_id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    nutrition_info = await _get_nutrition_modifier(user_id, profile, db, reference_date)
+    ctx = dict(rec.context or {})
+    ctx["nutrition"] = nutrition_info
+    rec.context = ctx
+    return rec
 
 
 def _apply_volume(base_sets: int, modifier: str) -> int:
@@ -387,7 +425,9 @@ async def get_today_recommendation(
             .order_by(desc(WorkoutRecommendation.generated_at))
         )
         existing = result.scalars().first()
-        return existing if existing else await _generate(user_id, db, reference_date=target)
+        if existing:
+            return await _attach_fresh_nutrition_context(existing, user_id, db, target)
+        return await _generate(user_id, db, reference_date=target)
     except HTTPException:
         raise
     except Exception as e:

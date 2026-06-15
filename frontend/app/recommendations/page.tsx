@@ -295,7 +295,8 @@ export default function RecommendationsPage() {
                   {rec.context?.nutrition && (
                     <span className="flex items-center gap-1.5 text-xs bg-black/20 px-2.5 py-1 rounded-full text-white/70">
                       <Beef className="h-3 w-3" />
-                      Белок: {rec.context.nutrition.yesterday_protein}г
+                      Белок {rec.context.nutrition.protein_label === 'today' ? 'сегодня' : 'вчера'}:{' '}
+                      {rec.context.nutrition.display_protein ?? rec.context.nutrition.yesterday_protein}г
                       {rec.context.nutrition.target_protein ? ` / ${rec.context.nutrition.target_protein}г` : ''}
                     </span>
                   )}
