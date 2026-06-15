@@ -31,7 +31,6 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      toast.success('Добро пожаловать!')
       router.replace('/dashboard')
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } }
@@ -143,7 +142,6 @@ export default function LoginPage() {
                   if (!response.credential) return
                   try {
                     await googleLogin(response.credential)
-                    toast.success('Добро пожаловать!')
                     router.replace('/dashboard')
                   } catch {
                     toast.error('Ошибка входа через Google')
