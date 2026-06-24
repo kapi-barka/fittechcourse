@@ -1,6 +1,4 @@
-/**
- * Страница статей
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -23,7 +21,7 @@ function ArticleCard({ article }: { article: Article }) {
   return (
     <Link href={`/articles/${article.id}`}>
       <div className="group relative rounded-2xl overflow-hidden cursor-pointer h-64 hover:ring-2 hover:ring-primary/40 transition-all duration-200 shadow-md">
-        {/* Background: image or gradient */}
+
         {article.cover_image_url ? (
           <Image
             src={article.cover_image_url}
@@ -36,10 +34,8 @@ function ArticleCard({ article }: { article: Article }) {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/60 to-primary/90" />
         )}
 
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
 
-        {/* Tags top-right */}
         {article.tags && article.tags.length > 0 && (
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
             {article.tags.slice(0, 2).map((tag, index) => (
@@ -54,7 +50,6 @@ function ArticleCard({ article }: { article: Article }) {
           </div>
         )}
 
-        {/* Bottom content */}
         <div className="absolute bottom-0 left-0 right-0 p-3.5">
           <p className="text-white font-semibold text-sm leading-snug line-clamp-2 mb-2">
             {article.title}
@@ -110,7 +105,6 @@ export default function ArticlesPage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-4 sm:py-8">
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <BookOpen className="h-7 w-7 text-primary" />
@@ -118,7 +112,6 @@ export default function ArticlesPage() {
             </h1>
           </div>
 
-          {/* Search */}
           <div className="mb-6">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -131,7 +124,6 @@ export default function ArticlesPage() {
             </div>
           </div>
 
-          {/* Content */}
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -80,7 +80,6 @@ export function WeightChart({
 
     if (!showProjection || !hasValidPrediction) return realPoints
 
-    // Connect projection at last real data point
     const lastIdx = realPoints.length - 1
     if (lastIdx >= 0 && realPoints[lastIdx].weight !== null) {
       realPoints[lastIdx] = { ...realPoints[lastIdx], projWeight: realPoints[lastIdx].weight }
@@ -112,7 +111,7 @@ export function WeightChart({
     setSelectedMetrics(prev => {
       const newSet = new Set(prev)
       if (newSet.has(metric)) {
-        // Не позволяем убрать последнюю метрику
+
         if (newSet.size > 1) {
           newSet.delete(metric)
         }
@@ -123,7 +122,6 @@ export function WeightChart({
     })
   }
 
-  // Проверяем наличие данных для выбранных метрик
   const hasData = useMemo(() => {
     if (chartData.length === 0) return false
     return Array.from(selectedMetrics).some(metric =>
@@ -131,7 +129,6 @@ export function WeightChart({
     )
   }, [chartData, selectedMetrics])
 
-  // Текст прогноза для заголовка
   const predictionLabel = useMemo(() => {
     if (!prediction?.has_enough_data) return null
     if (prediction.goal_reached) return `Цель достигнута — ${prediction.current_weight} кг`
@@ -191,7 +188,7 @@ export function WeightChart({
         )}
       </CardHeader>
       <CardContent className="flex-1 flex flex-col overflow-hidden pt-0">
-        {/* Фильтры метрик */}
+
         <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
           {(Object.keys(metricConfig) as MetricType[]).map((metric) => {
             const config = metricConfig[metric]
@@ -217,7 +214,7 @@ export function WeightChart({
               </button>
             )
           })}
-          {/* Кнопка прогноза — только когда выбран вес и есть данные */}
+
           {selectedMetrics.has('weight') && hasValidPrediction && (
             <button
               type="button"
@@ -269,7 +266,7 @@ export function WeightChart({
                   return metricConfig[metric]?.label || value
                 }}
               />
-              {/* Целевые линии */}
+
               {targetWeight && selectedMetrics.has('weight') && (
                 <ReferenceLine
                   y={targetWeight}
@@ -318,8 +315,7 @@ export function WeightChart({
                   label={{ value: 'Цель', position: 'insideTopLeft', fill: '#10b981', fontSize: 10 }}
                 />
               )}
-              
-              {/* Линии данных */}
+
               {selectedMetrics.has('weight') && (
                 <Line
                   type="monotone"
@@ -331,7 +327,7 @@ export function WeightChart({
                   name="weight"
                 />
               )}
-              {/* Пунктирная линия прогноза */}
+
               {selectedMetrics.has('weight') && showProjection && hasValidPrediction && (
                 <Line
                   type="monotone"
@@ -408,4 +404,3 @@ export function WeightChart({
     </Card>
   )
 }
-

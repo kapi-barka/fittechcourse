@@ -1,6 +1,4 @@
-/**
- * Компонент для распознавания продукта по фотографии
- */
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -163,7 +161,7 @@ export function PhotoRecognition({ onRecognize }: PhotoRecognitionProps) {
 
     return (
         <div className="space-y-3">
-            {/* Viewfinder */}
+
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ height: 220 }}>
                 {previewImage ? (
                     <>
@@ -194,14 +192,12 @@ export function PhotoRecognition({ onRecognize }: PhotoRecognitionProps) {
                 <canvas ref={canvasRef} className="hidden" />
             </div>
 
-            {/* Error */}
             {error && (
                 <div className="px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl text-xs">
                     {error}
                 </div>
             )}
 
-            {/* Action buttons */}
             {previewImage && !isScanning ? (
                 <>
                     <button

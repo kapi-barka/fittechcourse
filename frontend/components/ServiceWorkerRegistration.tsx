@@ -8,7 +8,6 @@ export function ServiceWorkerRegistration() {
       return
     }
 
-    // В development режиме удаляем все service workers для чистоты
     if (process.env.NODE_ENV === 'development') {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
@@ -19,7 +18,7 @@ export function ServiceWorkerRegistration() {
           })
         })
       })
-      // Очищаем кеш
+
       if ('caches' in window) {
         caches.keys().then((cacheNames) => {
           cacheNames.forEach((cacheName) => {
@@ -30,9 +29,8 @@ export function ServiceWorkerRegistration() {
       return
     }
 
-    // Регистрация service worker только в production
     if (process.env.NODE_ENV === 'production') {
-      // Регистрация service worker только в production
+
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -41,12 +39,10 @@ export function ServiceWorkerRegistration() {
             registration.scope
           )
 
-          // Проверка обновлений каждые 60 секунд
           setInterval(() => {
             registration.update()
           }, 60000)
 
-          // Обработка обновления service worker
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing
             if (newWorker) {
@@ -55,9 +51,9 @@ export function ServiceWorkerRegistration() {
                   newWorker.state === 'installed' &&
                   navigator.serviceWorker.controller
                 ) {
-                  // Новый service worker доступен, можно показать уведомление
+
                   console.log('[Service Worker] New version available')
-                  // Можно показать уведомление пользователю о необходимости обновления
+
                 }
               })
             }
@@ -67,7 +63,6 @@ export function ServiceWorkerRegistration() {
           console.error('[Service Worker] Registration failed:', error)
         })
 
-      // Обработка контроллера service worker
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('[Service Worker] Controller changed, reloading page')
         window.location.reload()
@@ -77,4 +72,3 @@ export function ServiceWorkerRegistration() {
 
   return null
 }
-

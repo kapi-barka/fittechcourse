@@ -1,7 +1,4 @@
-/**
- * Страница AI-тренера — чат с персональным контекстом пользователя.
- * Стриминг ответа реализован через fetch + ReadableStream (SSE).
- */
+
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -28,15 +25,14 @@ const QUICK_PROMPTS = [
   { icon: Zap,        text: 'Почему у меня не растут показатели?' },
 ]
 
-/** Конвертирует markdown-like текст в JSX без внешних зависимостей */
 function renderContent(text: string) {
   return text.split('\n').filter(l => l.trim() !== '').map((line, i) => {
-    // Убираем markdown-символы и рендерим как текст
+
     const clean = line
-      .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold** → plain
-      .replace(/\*(.+?)\*/g,   '$1')     // *italic* → plain
-      .replace(/^#{1,3}\s+/,   '')       // ## Header → plain
-      .replace(/^[-•]\s+/,     '→ ')    // - item → → item
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g,   '$1')
+      .replace(/^#{1,3}\s+/,   '')
+      .replace(/^[-•]\s+/,     '→ ')
 
     const isHighlight = /^→/.test(clean)
     return (
@@ -52,7 +48,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 
   return (
     <div className={cn('flex gap-3 items-start', isUser && 'flex-row-reverse')}>
-      {/* Аватар */}
+
       <div className={cn(
         'shrink-0 flex items-center justify-center w-8 h-8 rounded-full',
         isUser
@@ -62,7 +58,6 @@ function MessageBubble({ msg }: { msg: Message }) {
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </div>
 
-      {/* Текст */}
       <div className={cn(
         'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
         isUser
@@ -82,7 +77,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 }
 
 export default function CoachPage() {
-  useAuthStore() // ensure store is initialised
+  useAuthStore()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput]       = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -91,14 +86,12 @@ export default function CoachPage() {
   const messagesRef  = useRef<HTMLDivElement>(null)
   const textareaRef  = useRef<HTMLTextAreaElement>(null)
 
-  // Блокируем скролл страницы — чат сам управляет своим скроллом
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  // Загрузка истории
   useEffect(() => {
     coachAPI.getHistory()
       .then(res => {
@@ -113,7 +106,6 @@ export default function CoachPage() {
       .finally(() => setHistoryLoading(false))
   }, [])
 
-  // Автоскролл вниз — только внутри контейнера сообщений
   useEffect(() => {
     const el = messagesRef.current
     if (el) el.scrollTop = el.scrollHeight
@@ -163,7 +155,7 @@ export default function CoachPage() {
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''   // keep incomplete line
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
           if (!line.startsWith('data:')) continue
@@ -221,7 +213,6 @@ export default function CoachPage() {
     }
   }
 
-  // Авторесайз textarea
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
     const el = e.target
@@ -235,7 +226,6 @@ export default function CoachPage() {
     <AuthGuard>
       <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto w-full overflow-hidden">
 
-        {/* ── Header ─────────────────────────────── */}
         <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/8">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700">
@@ -257,7 +247,6 @@ export default function CoachPage() {
           )}
         </div>
 
-        {/* ── Messages ───────────────────────────── */}
         <div ref={messagesRef} className="flex-1 overflow-y-auto">
           <div className="px-4 py-6 space-y-5 min-h-full flex flex-col">
 
@@ -267,7 +256,6 @@ export default function CoachPage() {
               </div>
             )}
 
-            {/* Приветствие, если история пуста */}
             {isEmpty && (
               <div className="flex flex-col items-center gap-6 py-10 text-center m-auto">
                 <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-lg">
@@ -294,7 +282,6 @@ export default function CoachPage() {
               </div>
             )}
 
-            {/* Сообщения — прижаты к низу */}
             <div className="mt-auto space-y-5">
               {messages.map(msg => (
                 <MessageBubble key={msg.id} msg={msg} />
@@ -305,7 +292,6 @@ export default function CoachPage() {
           </div>
         </div>
 
-        {/* ── Input ──────────────────────────────── */}
         <div className="shrink-0 border-t border-white/8 bg-background px-4 py-3">
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">

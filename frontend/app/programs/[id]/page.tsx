@@ -1,6 +1,4 @@
-/**
- * Страница просмотра программы тренировок
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -109,7 +107,7 @@ export default function ProgramDetailPage() {
       fetchUser()
       checkIfSaved()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [programId])
 
   const checkIfSaved = async () => {
@@ -237,7 +235,6 @@ export default function ProgramDetailPage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-6 max-w-6xl">
 
-          {/* Назад */}
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5"
@@ -246,7 +243,6 @@ export default function ProgramDetailPage() {
             Назад
           </button>
 
-          {/* ── Hero ── */}
           <div className="relative rounded-2xl overflow-hidden mb-8 shadow-2xl h-64 md:h-80">
             {program.image_url ? (
               <Image
@@ -259,10 +255,9 @@ export default function ProgramDetailPage() {
             ) : (
               <div className={`absolute inset-0 bg-gradient-to-br ${getDifficultyGradient(program.difficulty)}`} />
             )}
-            {/* Gradient overlay */}
+
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
 
-            {/* Top-right: edit actions */}
             {canEdit && (
               <div className="absolute top-4 right-4 flex gap-2">
                 <button
@@ -280,9 +275,8 @@ export default function ProgramDetailPage() {
               </div>
             )}
 
-            {/* Bottom content */}
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-              {/* Badges */}
+
               <div className="flex flex-wrap gap-2 mb-3">
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${getDifficultyBadge(program.difficulty)}`}>
                   {getDifficultyLabel(program.difficulty)}
@@ -302,7 +296,6 @@ export default function ProgramDetailPage() {
                 {program.title}
               </h1>
 
-              {/* Meta chips */}
               <div className="flex flex-wrap gap-2 text-sm text-white/70">
                 {program.duration_weeks && (
                   <span className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
@@ -322,13 +315,10 @@ export default function ProgramDetailPage() {
             </div>
           </div>
 
-          {/* ── Content + Sidebar ── */}
           <div className="grid md:grid-cols-[1fr_280px] gap-6 items-start">
 
-            {/* Left: description + days */}
             <div className="space-y-8 min-w-0">
 
-              {/* Description */}
               {program.description && (
                 <div>
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Описание</h2>
@@ -338,7 +328,6 @@ export default function ProgramDetailPage() {
                 </div>
               )}
 
-              {/* Days */}
               {days.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl border border-dashed border-white/10">
                   <Dumbbell className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -351,7 +340,7 @@ export default function ProgramDetailPage() {
                     const dayExercises = groupedDetails[parseInt(day)].sort((a, b) => a.order - b.order)
                     return (
                       <div key={day}>
-                        {/* Day header */}
+
                         <div className="flex items-center gap-3 mb-3">
                           <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0">
                             День {day}
@@ -361,7 +350,6 @@ export default function ProgramDetailPage() {
                           <span className="text-xs text-muted-foreground shrink-0">{dayExercises.length} упр.</span>
                         </div>
 
-                        {/* Exercises */}
                         <div className="space-y-2">
                           {dayExercises.map((detail, index) => {
                             const exercise = exercisesMap[detail.exercise_id]
@@ -372,7 +360,7 @@ export default function ProgramDetailPage() {
                                 key={detail.id}
                                 className="rounded-xl border border-white/8 overflow-hidden bg-card/40 backdrop-blur-sm"
                               >
-                                {/* Trigger */}
+
                                 <button
                                   onClick={() => toggleAccordion(detail.id)}
                                   className="w-full flex items-center gap-3 p-4 hover:bg-white/3 transition-colors text-left"
@@ -406,10 +394,9 @@ export default function ProgramDetailPage() {
                                   <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {/* Expanded content */}
                                 {isOpen && (
                                   <div className="border-t border-white/6 p-4 space-y-4">
-                                    {/* Stats grid */}
+
                                     <div className="grid grid-cols-3 gap-2">
                                       {[
                                         { label: 'Подходы', value: detail.sets },
@@ -423,7 +410,6 @@ export default function ProgramDetailPage() {
                                       ))}
                                     </div>
 
-                                    {/* Note */}
                                     {detail.notes && (
                                       <div className="bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl text-sm">
                                         <span className="text-amber-500 font-semibold text-xs block mb-0.5">Примечание</span>
@@ -431,7 +417,6 @@ export default function ProgramDetailPage() {
                                       </div>
                                     )}
 
-                                    {/* Video + Muscle Map + Description */}
                                     <div className="grid md:grid-cols-2 gap-4">
                                       <div className="space-y-3">
                                         {exercise?.video_urls?.map((url, vidIndex) => {
@@ -479,7 +464,6 @@ export default function ProgramDetailPage() {
                                           )
                                         })}
 
-                                        {/* Muscle map */}
                                         {exercise?.muscle_groups && exercise.muscle_groups.length > 0 && (
                                           <div className="bg-white/4 rounded-xl p-3">
                                             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -517,10 +501,8 @@ export default function ProgramDetailPage() {
               )}
             </div>
 
-            {/* ── Sticky Sidebar ── */}
             <div className="md:sticky md:top-20 space-y-3">
 
-              {/* CTA */}
               <div className="rounded-2xl border border-white/8 bg-card/60 backdrop-blur-sm p-4 space-y-2">
                 {isActiveProgram ? (
                   <>
@@ -552,7 +534,6 @@ export default function ProgramDetailPage() {
                 )}
               </div>
 
-              {/* Stats */}
               <div className="rounded-2xl border border-white/8 bg-card/60 backdrop-blur-sm p-4 grid grid-cols-2 gap-2">
                 {[
                   { label: 'Недель',     value: program.duration_weeks ?? '—', icon: Calendar },
@@ -568,7 +549,6 @@ export default function ProgramDetailPage() {
                 ))}
               </div>
 
-              {/* Muscle map preview (if target muscles exist) */}
               {program.target_muscle_groups && (
                 <div className="rounded-2xl border border-white/8 bg-card/60 backdrop-blur-sm p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Группы мышц</p>

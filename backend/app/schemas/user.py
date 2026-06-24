@@ -1,50 +1,31 @@
-"""
-Pydantic схемы для пользователей и аутентификации
-"""
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime, date
 from uuid import UUID
 from app.models.user import UserRole, ActivityLevel, Gender, FitnessGoal, ExperienceLevel
 
-
-# ============ Аутентификация ============
-
 class UserLogin(BaseModel):
-    """Схема для входа пользователя"""
     email: EmailStr
     password: str
 
-
 class GoogleAuthRequest(BaseModel):
-    """Схема для входа/регистрации через Google"""
-    credential: str  # Google id_token
-
+    credential: str
 
 class UserCreate(BaseModel):
-    """Схема для регистрации пользователя"""
     email: EmailStr
     password: str = Field(..., min_length=6, description="Минимум 6 символов")
     full_name: Optional[str] = None
 
-
 class Token(BaseModel):
-    """Схема JWT токенов"""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
-
 class TokenData(BaseModel):
-    """Данные из JWT токена"""
     user_id: Optional[UUID] = None
     role: Optional[UserRole] = None
 
-
-# ============ Пользователь ============
-
 class UserResponse(BaseModel):
-    """Схема ответа с данными пользователя"""
     id: UUID
     email: str
     role: UserRole
@@ -54,11 +35,7 @@ class UserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# ============ Профиль пользователя ============
-
 class UserProfileCreate(BaseModel):
-    """Схема создания профиля"""
     full_name: Optional[str] = None
     gender: Optional[Gender] = None
     birth_date: Optional[date] = None
@@ -68,7 +45,7 @@ class UserProfileCreate(BaseModel):
     target_proteins: Optional[float] = Field(None, ge=0, le=500, description="Целевые белки в день (г, от 0 до 500)")
     target_fats: Optional[float] = Field(None, ge=0, le=500, description="Целевые жиры в день (г, от 0 до 500)")
     target_carbs: Optional[float] = Field(None, ge=0, le=1000, description="Целевые углеводы в день (г, от 0 до 1000)")
-    # Целевые замеры тела
+
     target_chest: Optional[float] = Field(None, ge=50, le=200, description="Целевой обхват груди в см (от 50 до 200)")
     target_waist: Optional[float] = Field(None, ge=40, le=200, description="Целевой обхват талии в см (от 40 до 200)")
     target_hips: Optional[float] = Field(None, ge=50, le=200, description="Целевой обхват бедер в см (от 50 до 200)")
@@ -78,9 +55,7 @@ class UserProfileCreate(BaseModel):
     fitness_goal: Optional[FitnessGoal] = None
     experience_level: Optional[ExperienceLevel] = None
 
-
 class UserProfileUpdate(BaseModel):
-    """Схема обновления профиля"""
     full_name: Optional[str] = None
     gender: Optional[Gender] = None
     birth_date: Optional[date] = None
@@ -90,7 +65,7 @@ class UserProfileUpdate(BaseModel):
     target_proteins: Optional[float] = Field(None, ge=0, le=500)
     target_fats: Optional[float] = Field(None, ge=0, le=500)
     target_carbs: Optional[float] = Field(None, ge=0, le=1000)
-    # Целевые замеры тела
+
     target_chest: Optional[float] = Field(None, ge=50, le=200)
     target_waist: Optional[float] = Field(None, ge=40, le=200)
     target_hips: Optional[float] = Field(None, ge=50, le=200)
@@ -101,9 +76,7 @@ class UserProfileUpdate(BaseModel):
     experience_level: Optional[ExperienceLevel] = None
     avatar_url: Optional[str] = None
 
-
 class UserProfileResponse(BaseModel):
-    """Схема ответа с профилем пользователя"""
     user_id: UUID
     full_name: Optional[str] = None
     gender: Optional[Gender] = None
@@ -114,7 +87,7 @@ class UserProfileResponse(BaseModel):
     target_proteins: Optional[float] = None
     target_fats: Optional[float] = None
     target_carbs: Optional[float] = None
-    # Целевые замеры тела
+
     target_chest: Optional[float] = None
     target_waist: Optional[float] = None
     target_hips: Optional[float] = None
@@ -129,10 +102,7 @@ class UserProfileResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class UserWithProfile(UserResponse):
-    """Пользователь с профилем"""
     profile: Optional[UserProfileResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
-

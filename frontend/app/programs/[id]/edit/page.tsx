@@ -1,6 +1,4 @@
-/**
- * Страница редактирования тренировочной программы
- */
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -43,7 +41,6 @@ export default function EditProgramPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Данные программы
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(false)
@@ -141,7 +138,6 @@ export default function EditProgramPage() {
         setTargetMuscles([])
       }
 
-      // Map details to match the form structure
       if (program.details) {
         const mappedDetails = program.details.map(d => ({
           exercise_id: d.exercise_id,
@@ -152,7 +148,7 @@ export default function EditProgramPage() {
           order: d.order,
           notes: d.notes || ''
         }))
-        // Sort by day and order just in case
+
         mappedDetails.sort((a, b) => {
           if (a.day_number !== b.day_number) return a.day_number - b.day_number
           return a.order - b.order
@@ -205,7 +201,7 @@ export default function EditProgramPage() {
     setIsSaving(true)
 
     try {
-      // Fix order based on current array index
+
       const orderedDetails = details.map((d, index) => ({
         ...d,
         order: index
@@ -252,7 +248,7 @@ export default function EditProgramPage() {
       <div className="min-h-screen dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
 
         <main className="container mx-auto px-4 py-8">
-          {/* Заголовок */}
+
           <div className="mb-8">
             <Button
               variant="ghost"
@@ -272,7 +268,7 @@ export default function EditProgramPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Основная информация */}
+
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle>Основная информация</CardTitle>
@@ -434,7 +430,6 @@ export default function EditProgramPage() {
               </CardContent>
             </Card>
 
-            {/* Упражнения */}
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -578,7 +573,6 @@ export default function EditProgramPage() {
               </CardContent>
             </Card>
 
-            {/* Кнопки действий */}
             <div className="flex gap-4">
               <Button
                 type="submit"
@@ -604,4 +598,3 @@ export default function EditProgramPage() {
     </AuthGuard>
   )
 }
-

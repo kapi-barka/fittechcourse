@@ -1,11 +1,3 @@
-"""
-API для умных рекомендаций тренировок.
-
-Движок рекомендаций использует три угла анализа:
-  1. Weak Point     — дельта между целевыми и текущими замерами тела
-  2. Recovery       — исключает мышцы, нагруженные за последние 48ч
-  3. Nutrition Sync — корректирует объём нагрузки по вчерашнему белку
-"""
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -36,9 +28,6 @@ from app.schemas.recommendation import (
 
 router = APIRouter()
 
-# ──────────────────────────────────────────────────────
-# Mapping: measurement key → muscle keyword substrings
-# ──────────────────────────────────────────────────────
 MEASUREMENT_MUSCLE_MAP: dict[str, list[str]] = {
     "chest":  ["chest", "pectoral"],
     "biceps": ["bicep", "forearm"],
@@ -55,22 +44,11 @@ MEASUREMENT_NAMES_RU: dict[str, str] = {
     "thigh":  "Бедро (нога)",
 }
 
-
-# ──────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────
-
 async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
-    """
-    Возвращает список мышечных групп (lower-case), которые были
-    нагружены за последние 48 часов.
-    Источники: WorkoutLog (программы) + ExercisePerformanceLog (рекомендации / свободные).
-    """
     try:
         since = datetime.utcnow() - timedelta(hours=48)
         fatigued: set[str] = set()
 
-        # Источник 1: тренировки по программе
         logs_result = await db.execute(
             select(WorkoutLog).where(
                 and_(WorkoutLog.user_id == user_id, WorkoutLog.completed_at >= since)
@@ -93,7 +71,6 @@ async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
                 if detail.exercise and detail.exercise.muscle_groups:
                     fatigued.update(m.lower() for m in detail.exercise.muscle_groups)
 
-        # Источник 2: выполненные упражнения из рекомендаций и свободных тренировок
         perf_result = await db.execute(
             select(ExercisePerformanceLog)
             .options(selectinload(ExercisePerformanceLog.exercise))
@@ -113,13 +90,7 @@ async def _get_fatigued_muscles(user_id: UUID, db: AsyncSession) -> list[str]:
         logger.warning(f"_get_fatigued_muscles failed: {e}")
         return []
 
-
 def _compute_weak_points(profile: UserProfile | None, metrics: list[BodyMetric]) -> list[dict]:
-    """
-    Возвращает список отстающих замеров, отсортированных по дефициту (убывание).
-    Для талии — цель снижение (current > target), для остальных — рост (target > current).
-    Мёрджит последние 50 замеров: для каждого поля берётся последнее ненулевое значение.
-    """
     if not profile or not metrics:
         return []
 
@@ -154,7 +125,6 @@ def _compute_weak_points(profile: UserProfile | None, metrics: list[BodyMetric])
 
     return sorted(weak_points, key=lambda x: x["deficit"], reverse=True)
 
-
 async def _sum_protein_for_day(user_id: UUID, day: date, db: AsyncSession) -> float:
     logs_result = await db.execute(
         select(NutritionLog)
@@ -173,17 +143,12 @@ async def _sum_protein_for_day(user_id: UUID, day: date, db: AsyncSession) -> fl
         if log.product and log.product.proteins
     )
 
-
 async def _get_nutrition_modifier(
     user_id: UUID,
     profile: Optional[UserProfile],
     db: AsyncSession,
     reference_date: Optional[date] = None,
 ) -> dict:
-    """
-    Вычисляет модификатор объёма нагрузки на основе вчерашнего потребления белка.
-    Если за вчера нет записей — использует сегодняшний день (для демо и начала дня).
-    """
     _default = {
         "yesterday_protein": 0.0,
         "today_protein": 0.0,
@@ -220,14 +185,12 @@ async def _get_nutrition_modifier(
         logger.warning(f"_get_nutrition_modifier failed: {e}")
         return _default
 
-
 async def _attach_fresh_nutrition_context(
     rec: WorkoutRecommendation,
     user_id: UUID,
     db: AsyncSession,
     reference_date: date,
 ) -> WorkoutRecommendation:
-    """Обновляет блок nutrition в context актуальными данными питания."""
     profile_result = await db.execute(
         select(UserProfile).where(UserProfile.user_id == user_id)
     )
@@ -238,14 +201,12 @@ async def _attach_fresh_nutrition_context(
     rec.context = ctx
     return rec
 
-
 def _apply_volume(base_sets: int, modifier: str) -> int:
     if modifier == "low":
         return max(2, base_sets - 1)
     if modifier == "high":
         return base_sets + 1
     return base_sets
-
 
 async def _find_exercises(
     include_keywords: list[str],
@@ -277,23 +238,17 @@ async def _find_exercises(
         logger.warning(f"_find_exercises failed: {e}")
         return []
 
-
-# ──────────────────────────────────────────────────────
-# Core recommendation engine
-# ──────────────────────────────────────────────────────
-
 async def _generate(
     user_id: UUID,
     db: AsyncSession,
     reference_date: Optional[date] = None,
 ) -> WorkoutRecommendation:
-    # Load profile
+
     profile_result = await db.execute(
         select(UserProfile).where(UserProfile.user_id == user_id)
     )
     profile = profile_result.scalar_one_or_none()
 
-    # Load last 50 body metrics for merged weak-point analysis
     metric_result = await db.execute(
         select(BodyMetric)
         .where(BodyMetric.user_id == user_id)
@@ -302,7 +257,6 @@ async def _generate(
     )
     recent_metrics = metric_result.scalars().all()
 
-    # Analysis
     fatigued_muscles = await _get_fatigued_muscles(user_id, db)
     weak_points      = _compute_weak_points(profile, recent_metrics)
     nutrition_info   = await _get_nutrition_modifier(user_id, profile, db, reference_date)
@@ -316,7 +270,6 @@ async def _generate(
         "nutrition":      nutrition_info,
     }
 
-    # Filter weak points: remove fatigued muscle groups
     available_weak = [
         wp for wp in weak_points
         if not any(fm in m for fm in fatigued_muscles for m in wp["muscles"])
@@ -328,7 +281,7 @@ async def _generate(
     if available_weak:
         reason = RecommendationReason.WEAK_POINT
         target_keywords: list[str] = []
-        for wp in available_weak[:2]:  # top-2 weak points
+        for wp in available_weak[:2]:
             target_keywords.extend(wp["muscles"])
 
         exercises = await _find_exercises(target_keywords, fatigued_muscles, db, limit=5)
@@ -353,7 +306,7 @@ async def _generate(
             })
 
     elif fatigued_muscles:
-        # All weak points are fatigued → recovery session on fresh muscles
+
         reason = RecommendationReason.RECOVERY
         exercises = await _find_exercises([], fatigued_muscles, db, limit=6)
         for ex in exercises:
@@ -368,7 +321,7 @@ async def _generate(
             })
 
     else:
-        # No data → free session
+
         exercises = await _find_exercises([], [], db, limit=5)
         for ex in exercises:
             rec_exercises.append({
@@ -398,19 +351,13 @@ async def _generate(
         logger.error(f"Failed to save recommendation: {e}")
         raise
 
-
-# ──────────────────────────────────────────────────────
-# Routes
-# ──────────────────────────────────────────────────────
-
 @router.get("/today", response_model=WorkoutRecommendationResponse)
 async def get_today_recommendation(
     target_date: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Вернуть рекомендацию за день или сгенерировать новую."""
-    user_id = current_user.id  # cache before try to avoid MissingGreenlet on expired ORM object
+    user_id = current_user.id
     try:
         target = target_date or date.today()
         result = await db.execute(
@@ -435,14 +382,12 @@ async def get_today_recommendation(
         logger.error(f"GET /recommendations/today failed for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Не удалось загрузить рекомендацию")
 
-
 @router.post("/generate", response_model=WorkoutRecommendationResponse)
 async def force_generate(
     target_date: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Принудительно сгенерировать новую рекомендацию."""
     user_id = current_user.id
     try:
         return await _generate(user_id, db, reference_date=target_date or date.today())
@@ -452,7 +397,6 @@ async def force_generate(
         await db.rollback()
         logger.error(f"POST /recommendations/generate failed for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Не удалось сгенерировать рекомендацию")
-
 
 @router.post("/{recommendation_id}/accept")
 async def accept_recommendation(
@@ -475,7 +419,6 @@ async def accept_recommendation(
     await db.commit()
     return {"status": "accepted"}
 
-
 @router.post("/{recommendation_id}/complete")
 async def complete_recommendation(
     recommendation_id: UUID,
@@ -496,7 +439,6 @@ async def complete_recommendation(
     rec.status = RecommendationStatus.COMPLETED
     await db.commit()
     return {"status": "completed"}
-
 
 @router.post("/{recommendation_id}/skip")
 async def skip_recommendation(
@@ -519,7 +461,6 @@ async def skip_recommendation(
     await db.commit()
     return {"status": "skipped"}
 
-
 @router.get("/history", response_model=List[WorkoutRecommendationResponse])
 async def get_history(
     skip: int = 0,
@@ -536,14 +477,12 @@ async def get_history(
     )
     return result.scalars().all()
 
-
 @router.post("/log-exercise", response_model=ExercisePerformanceLogResponse)
 async def log_exercise_performance(
     data: ExercisePerformanceLogCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Записать фактическое выполнение упражнения (подходы, повторения, вес)."""
     log = ExercisePerformanceLog(user_id=current_user.id, **data.model_dump())
     db.add(log)
     await db.commit()

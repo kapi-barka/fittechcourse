@@ -1,6 +1,4 @@
-/**
- * Страница отдельной статьи
- */
+
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -83,7 +81,7 @@ export default function ArticlePage() {
                 <h1 className="text-4xl font-extrabold mb-4 text-foreground">
                   {article.title}
                 </h1>
-                
+
                 {article.excerpt && (
                   <p className="text-lg text-muted-foreground mb-6">
                     {article.excerpt}
@@ -104,4 +102,3 @@ export default function ArticlePage() {
     </AuthGuard>
   )
 }
-

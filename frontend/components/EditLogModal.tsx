@@ -1,6 +1,4 @@
-/**
- * Модальное окно для редактирования записи питания
- */
+
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -228,4 +226,3 @@ export function EditLogModal({ isOpen, onClose, log, onSuccess }: EditLogModalPr
     </Dialog>
   )
 }
-

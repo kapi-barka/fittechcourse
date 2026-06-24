@@ -46,13 +46,13 @@ export function WaterTracker() {
     try {
       const response = await nutritionAPI.logWater(amount)
       console.log('Water logged successfully:', response.data)
-      // Обновляем данные после успешного добавления
+
       await fetchHydration()
-      setAmount(250) // Сброс к стандартному значению
+      setAmount(250)
       toast.success(`Добавлено ${amount} мл воды`)
     } catch (error) {
       console.error('Failed to log water:', error)
-      const errorMessage = error instanceof AxiosError 
+      const errorMessage = error instanceof AxiosError
         ? error.response?.data?.detail || 'Ошибка при записи воды'
         : 'Ошибка при записи воды'
       toast.error(errorMessage)
@@ -91,7 +91,7 @@ export function WaterTracker() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Прогресс */}
+
         {hydration && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
@@ -112,7 +112,6 @@ export function WaterTracker() {
           </div>
         )}
 
-        {/* Быстрые кнопки */}
         <div>
           <label className="block text-sm font-medium mb-2">Быстрый выбор (мл)</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -130,7 +129,6 @@ export function WaterTracker() {
           </div>
         </div>
 
-        {/* Ручной ввод */}
         <div>
           <label className="block text-sm font-medium mb-2">Количество (мл)</label>
           <div className="flex gap-2">
@@ -165,7 +163,6 @@ export function WaterTracker() {
 
         <p className="text-xs text-muted-foreground text-center">От 50 до 5000 мл</p>
 
-        {/* Кнопка добавления */}
         <Button
           onClick={handleLogWater}
           disabled={isLoading || amount < 50 || amount > 5000}
@@ -178,4 +175,3 @@ export function WaterTracker() {
     </Card>
   )
 }
-

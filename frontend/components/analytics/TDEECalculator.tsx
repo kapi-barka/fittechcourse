@@ -100,7 +100,7 @@ export function TDEECalculator() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Основные показатели */}
+
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 bg-primary/10 rounded-lg">
             <div className="text-xs text-muted-foreground mb-0.5">BMR</div>
@@ -114,7 +114,6 @@ export function TDEECalculator() {
           </div>
         </div>
 
-        {/* Детали - компактно в одну строку */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Вес:</span>
@@ -139,4 +138,3 @@ export function TDEECalculator() {
     </Card>
   )
 }
-

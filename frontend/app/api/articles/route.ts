@@ -18,21 +18,19 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     const articlesDir = join(process.cwd(), 'articles')
     const articlesJsonPath = join(articlesDir, 'articles.json')
-    
-    // Читаем метаданные статей
+
     const articlesJson = JSON.parse(readFileSync(articlesJsonPath, 'utf-8'))
-    
+
     if (id) {
-      // Возвращаем конкретную статью
+
       const article = (articlesJson as Article[]).find((a) => a.id === id)
       if (!article) {
         return NextResponse.json({ error: 'Article not found' }, { status: 404 })
       }
-      
-      // Читаем HTML контент
+
       const htmlPath = join(articlesDir, `${id}.html`)
       try {
         const htmlContent = readFileSync(htmlPath, 'utf-8')
@@ -44,7 +42,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Article content not found' }, { status: 404 })
       }
     } else {
-      // Возвращаем список статей
+
       return NextResponse.json(articlesJson)
     }
   } catch (error) {
@@ -52,4 +50,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to read articles' }, { status: 500 })
   }
 }
-

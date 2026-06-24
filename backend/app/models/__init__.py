@@ -1,7 +1,3 @@
-"""
-Модели базы данных
-Экспорт всех моделей для удобного импорта
-"""
 from app.models.user import User, UserProfile
 from app.models.exercise import Exercise
 from app.models.program import Program, ProgramDetail
@@ -28,4 +24,3 @@ __all__ = [
     "WorkoutRecommendation",
     "ChatMessage",
 ]
-

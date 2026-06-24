@@ -1,6 +1,4 @@
-/**
- * Страница умных рекомендаций тренировок
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -234,7 +232,6 @@ export default function RecommendationsPage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-6 max-w-4xl">
 
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="font-bold text-xl flex items-center gap-2">
@@ -264,7 +261,6 @@ export default function RecommendationsPage() {
           ) : (
             <div className="space-y-4">
 
-              {/* ── Reason hero card ── */}
               <div className={cn(
                 'rounded-2xl border p-5 bg-gradient-to-br',
                 config?.gradient, config?.border
@@ -284,7 +280,6 @@ export default function RecommendationsPage() {
                   </span>
                 </div>
 
-                {/* Workout summary chips */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="flex items-center gap-1.5 text-xs bg-black/20 px-2.5 py-1 rounded-full text-white/70">
                     <Dumbbell className="h-3 w-3" />{totalExercises} упражнений
@@ -302,7 +297,6 @@ export default function RecommendationsPage() {
                   )}
                 </div>
 
-                {/* Weak points */}
                 {rec.context?.weak_points && rec.context.weak_points.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {rec.context.weak_points.slice(0, 3).map(wp => (
@@ -313,7 +307,6 @@ export default function RecommendationsPage() {
                   </div>
                 )}
 
-                {/* Context details toggle */}
                 {rec.context && (rec.context.fatigued_muscles?.length > 0 || rec.context.weak_points?.length > 0) && (
                   <button
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-3"
@@ -337,7 +330,6 @@ export default function RecommendationsPage() {
                 )}
               </div>
 
-              {/* ── Action buttons (pending) ── */}
               {rec.status === 'pending' && (
                 <div className="flex gap-2">
                   <Button className="flex-1 rounded-xl" onClick={handleAccept} disabled={isActioning} isLoading={isActioning}>
@@ -349,14 +341,12 @@ export default function RecommendationsPage() {
                 </div>
               )}
 
-              {/* ── Skipped state ── */}
               {rec.status === 'skipped' && (
                 <Button className="w-full rounded-xl" variant="outline" onClick={handleGenerate} isLoading={isGenerating}>
                   <RefreshCw className="h-4 w-4 mr-2" />Сгенерировать новую тренировку
                 </Button>
               )}
 
-              {/* ── Completed state ── */}
               {rec.status === 'completed' && (
                 <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-5 text-center">
                   <Trophy className="h-10 w-10 text-yellow-400 mx-auto mb-2" />
@@ -365,10 +355,9 @@ export default function RecommendationsPage() {
                 </div>
               )}
 
-              {/* ── Exercise list ── */}
               {rec.status !== 'skipped' && (
                 <div className="space-y-3">
-                  {/* Header with progress */}
+
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                       Упражнения
@@ -378,7 +367,6 @@ export default function RecommendationsPage() {
                     )}
                   </div>
 
-                  {/* Progress bar (accepted only) */}
                   {rec.status === 'accepted' && (
                     <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
                       <div
@@ -402,7 +390,6 @@ export default function RecommendationsPage() {
                     />
                   ))}
 
-                  {/* Finish button (accepted only) */}
                   {rec.status === 'accepted' && (
                     <Button
                       className={cn('w-full rounded-xl mt-2', allDone && 'ring-2 ring-yellow-400/40')}
@@ -417,7 +404,6 @@ export default function RecommendationsPage() {
                 </div>
               )}
 
-              {/* ── History ── */}
               {history.length > 1 && (
                 <div className="pt-2">
                   <button
@@ -483,9 +469,9 @@ function ExerciseCard({
       'rounded-xl border border-white/8 bg-card/40 overflow-hidden transition-all duration-200',
       isChecked && 'border-emerald-500/30 bg-emerald-500/5'
     )}>
-      {/* Trigger row */}
+
       <div className="flex items-start gap-3 px-4 py-3">
-        {/* Number / Checkbox */}
+
         {isCheckable ? (
           <button
             onClick={onToggle}
@@ -527,7 +513,6 @@ function ExerciseCard({
           )}
         </div>
 
-        {/* Expand toggle */}
         {exerciseDetail && (exerciseDetail.description || (exerciseDetail.video_urls && exerciseDetail.video_urls.length > 0)) && (
           <button
             onClick={onToggleOpen}
@@ -538,11 +523,10 @@ function ExerciseCard({
         )}
       </div>
 
-      {/* Expanded content */}
       {isOpen && exerciseDetail && (
         <div className="border-t border-white/6 px-4 py-4 space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Left: video + muscle map */}
+
             <div className="space-y-3">
               {exerciseDetail.video_urls?.map((url, vidIndex) => {
                 const isYouTube = url.includes('youtube.com') || url.includes('youtu.be')
@@ -597,7 +581,6 @@ function ExerciseCard({
               )}
             </div>
 
-            {/* Right: description */}
             {exerciseDetail.description && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">

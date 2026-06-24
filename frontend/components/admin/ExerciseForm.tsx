@@ -25,7 +25,7 @@ export const ExerciseForm = ({
         name: '',
         description: '',
         muscle_groups: [] as string[],
-        video_urls: [] as string[] // Array of strings
+        video_urls: [] as string[]
     })
     const [videoInput, setVideoInput] = useState('')
     const [mapMode, setMapMode] = useState<'front' | 'back'>('front')
@@ -58,7 +58,7 @@ export const ExerciseForm = ({
             toast.error('Ошибка при загрузке файла')
         } finally {
             setIsUploading(false)
-            // Reset input
+
             e.target.value = ''
         }
     }
@@ -68,12 +68,12 @@ export const ExerciseForm = ({
     }
 
     const toggleMuscle = (svgId: string) => {
-        // Преобразуем SVG ID в стандартное название группы мышц
+
         const standardGroups = svgIdToStandardMuscleGroups(svgId)
         if (standardGroups.length === 0) return
-        
-        const muscleGroup = standardGroups[0] // Используем первую группу
-        
+
+        const muscleGroup = standardGroups[0]
+
         setFormData(prev => {
             const current = prev.muscle_groups || []
             const exists = current.includes(muscleGroup)
@@ -139,7 +139,7 @@ export const ExerciseForm = ({
                     <div className="bg-muted/30 rounded-xl p-4 border h-[400px] flex items-center justify-center">
                         <MuscleMap
                             mode={mapMode}
-                            selectedMuscles={formData.muscle_groups.flatMap(mg => 
+                            selectedMuscles={formData.muscle_groups.flatMap(mg =>
                                 standardMuscleGroupToSvgIds(mg as StandardMuscleGroup, mapMode)
                             )}
                             onSelect={toggleMuscle}

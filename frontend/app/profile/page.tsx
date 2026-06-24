@@ -10,7 +10,6 @@ import { usersAPI, UserProfile } from '@/lib/api'
 import { Loader2, Target, Scale, Flame, Beef, Droplets, Save } from 'lucide-react'
 import { toast } from 'react-toastify'
 
-// ── Section header ───────────────────────────────────────────────────────────
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
     <div className="flex items-center gap-2 pt-1">
@@ -20,7 +19,6 @@ function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: 
   )
 }
 
-// ── Hint text ────────────────────────────────────────────────────────────────
 function Hint({ children }: { children: React.ReactNode }) {
   return <p className="text-xs text-muted-foreground mt-1">{children}</p>
 }
@@ -95,7 +93,6 @@ export default function ProfilePage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <Target className="h-7 w-7 text-primary" />
@@ -117,7 +114,6 @@ export default function ProfilePage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Personal */}
             <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
               <SectionHeader icon={Target} label="Личные данные" />
 
@@ -146,7 +142,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Weight & calories */}
             <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
               <SectionHeader icon={Scale} label="Вес и калории" />
 
@@ -188,7 +183,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Macros */}
             <div className="rounded-2xl border border-white/8 bg-card/60 p-5 space-y-4">
               <SectionHeader icon={Beef} label="Макронутриенты (г/день)" />
 

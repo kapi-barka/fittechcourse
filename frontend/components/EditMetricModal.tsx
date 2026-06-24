@@ -1,6 +1,4 @@
-/**
- * Модальное окно для редактирования замера
- */
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -56,7 +54,7 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
     setIsLoading(true)
     try {
       const updateData: Partial<BodyMetric> = {}
-      
+
       if (formData.weight) updateData.weight = parseFloat(formData.weight)
       if (formData.chest) updateData.chest = parseFloat(formData.chest)
       if (formData.waist) updateData.waist = parseFloat(formData.waist)
@@ -225,4 +223,3 @@ export function EditMetricModal({ isOpen, onClose, metric, onSuccess }: EditMetr
     </Dialog>
   )
 }
-

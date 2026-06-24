@@ -1,6 +1,4 @@
-/**
- * Страница текущей тренировки и расписания
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -33,7 +31,6 @@ export default function SchedulePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notes, setNotes] = useState('')
   const [duration, setDuration] = useState('')
-
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
@@ -68,7 +65,6 @@ export default function SchedulePage() {
       setProgram(progRes.data)
       setScheduleStatus(statusRes.data)
 
-      // Map exercises by ID
       const exMap: Record<string, Exercise> = {}
       exRes.data.forEach(e => exMap[e.id] = e)
       setExercises(exMap)
@@ -92,7 +88,6 @@ export default function SchedulePage() {
         notes: notes
       })
 
-      // Refresh data
       await fetchData()
       setNotes('')
       setDuration('')
@@ -110,7 +105,7 @@ export default function SchedulePage() {
     const exercise = exercises[exerciseId]
     if (exercise) {
       setSelectedExercise(exercise)
-      // Auto-switch map mode based on muscle group
+
       const backMuscles = ['traps', 'lats', 'lowerback', 'glutes', 'hamstrings', 'calves', 'triceps', 'rear-shoulders', 'traps-middle']
       const hasBackMuscle = exercise.muscle_groups?.some(mg => backMuscles.some(m => mg.includes(m)))
 
@@ -155,7 +150,6 @@ export default function SchedulePage() {
   const totalWeeks = scheduleStatus?.duration_weeks || program?.duration_weeks || 4
   const isFinished = scheduleStatus ? scheduleStatus.completed_workouts >= scheduleStatus.total_workout_days && scheduleStatus.total_workout_days > 0 : false
 
-  // Find exercises for today (day number matches weekday)
   const todaysExercises = program?.details
     .filter(d => d.day_number === currentDay)
     .sort((a, b) => a.order - b.order) || []
@@ -185,10 +179,10 @@ export default function SchedulePage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {/* Прогресс программы — единая компактная карточка */}
+
               <Card className="border-0 shadow-md">
                 <CardContent className="p-4">
-                  {/* Заголовок + процент */}
+
                   <div className="flex items-center justify-between gap-4 mb-2">
                     <div className="min-w-0">
                       <h2 className="font-bold text-sm leading-tight truncate">{program.title}</h2>
@@ -201,7 +195,6 @@ export default function SchedulePage() {
                     </span>
                   </div>
 
-                  {/* Прогресс-бар */}
                   <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden mb-4">
                     <div
                       className="h-full bg-primary transition-all duration-500"
@@ -219,7 +212,6 @@ export default function SchedulePage() {
                     </div>
                   )}
 
-                  {/* Сетка недель: 2 колонки на мобайле, 4 на десктопе */}
                   {workoutsPerWeek > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
                       {Array.from({ length: totalWeeks }, (_, weekIndex) => {
@@ -270,7 +262,6 @@ export default function SchedulePage() {
                 </CardContent>
               </Card>
 
-              {/* Основная секция: Текущая тренировка */}
               <div>
                 {isFinished ? (
                   <div className="h-64 flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
@@ -323,8 +314,8 @@ export default function SchedulePage() {
                         {todaysExercises.map((detail, index) => {
                           const isCompleted = completedExercises.has(detail.id)
                           return (
-                            <Card 
-                              key={detail.id} 
+                            <Card
+                              key={detail.id}
                               className={cn(
                                 "border-0 shadow-md hover:shadow-lg transition-all",
                                 isCompleted && "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800"
@@ -435,7 +426,6 @@ export default function SchedulePage() {
           )}
         </main>
 
-        {/* Modal Details */}
         <Modal
           isOpen={isDetailsOpen}
           onClose={() => setIsDetailsOpen(false)}
@@ -443,10 +433,10 @@ export default function SchedulePage() {
           className="max-w-6xl"
         >
           <div className="space-y-6">
-            {/* Описание и видео рядом */}
+
             {(selectedExercise?.description || (selectedExercise?.video_urls && selectedExercise.video_urls.length > 0)) && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Описание */}
+
                 {selectedExercise?.description && (
                   <div>
                     <h4 className="font-semibold mb-2">Описание техники</h4>
@@ -456,7 +446,6 @@ export default function SchedulePage() {
                   </div>
                 )}
 
-                {/* Видео */}
                 {selectedExercise?.video_urls && selectedExercise.video_urls.length > 0 && (
                   <div>
                     <h4 className="font-semibold mb-3">Видео</h4>
@@ -525,7 +514,6 @@ export default function SchedulePage() {
               </div>
             )}
 
-            {/* Карта мышц */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h4 className="font-semibold">Задействованные мышцы</h4>

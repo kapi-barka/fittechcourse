@@ -1,6 +1,4 @@
-/**
- * Навигационная панель с адаптивным дизайном
- */
+
 'use client'
 
 import React, { useState } from 'react'
@@ -52,7 +50,6 @@ export const Navbar = () => {
     ...(user?.role === 'admin' ? [adminLink] : []),
   ]
 
-  // Не показываем Navbar на страницах логина и регистрации
   const isAuthPage = pathname === '/login' || pathname === '/register'
   if (!isAuthenticated || isAuthPage) return null
 
@@ -69,7 +66,6 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-between gap-4">
 
-          {/* Logo */}
           <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
             <div className="relative h-8 w-8 overflow-hidden rounded-lg ring-1 ring-white/10">
               <Image
@@ -86,7 +82,6 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:gap-0.5">
             {mainLinks.map((link) => {
               const Icon = link.icon
@@ -104,7 +99,6 @@ export const Navbar = () => {
               )
             })}
 
-            {/* Admin */}
             {user?.role === 'admin' && (
               <Link
                 href="/admin"
@@ -117,7 +111,6 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* User Menu */}
           <div className="hidden md:flex md:items-center md:gap-2">
             <Link
               href="/account"
@@ -155,7 +148,6 @@ export const Navbar = () => {
             </Button>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden rounded-md p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -164,7 +156,6 @@ export const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/5 py-3 space-y-0.5">
             {allMobileLinks.map((link) => {

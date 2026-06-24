@@ -1,6 +1,4 @@
-/**
- * Страница программ тренировок — каталог и личные программы
- */
+
 'use client'
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
@@ -31,10 +29,6 @@ import {
 import Link from 'next/link'
 import { toast } from 'react-toastify'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function getDifficultyLabel(difficulty?: string | null) {
   switch (difficulty) {
     case 'beginner':    return 'Начинающий'
@@ -44,9 +38,6 @@ function getDifficultyLabel(difficulty?: string | null) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Цвет фона по сложности (для карточек без изображения)
-// ---------------------------------------------------------------------------
 function getDifficultyGradient(difficulty?: string | null) {
   switch (difficulty) {
     case 'beginner':     return 'from-emerald-600 to-teal-800'
@@ -65,14 +56,11 @@ function getDifficultyBadgeBg(difficulty?: string | null) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Карточка каталога — magazine style
-// ---------------------------------------------------------------------------
 function CatalogCard({ program }: { program: Program }) {
   return (
     <Link href={`/programs/${program.id}`}>
       <div className="group relative rounded-2xl overflow-hidden cursor-pointer h-60 hover:ring-2 hover:ring-primary/40 transition-all duration-200 shadow-md">
-        {/* Фон: фото или градиент */}
+
         {program.image_url ? (
           <Image
             src={program.image_url}
@@ -85,10 +73,8 @@ function CatalogCard({ program }: { program: Program }) {
           <div className={`absolute inset-0 bg-gradient-to-br ${getDifficultyGradient(program.difficulty)}`} />
         )}
 
-        {/* Тёмный оверлей снизу */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
 
-        {/* Верхние бейджи */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
           <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full text-white ${getDifficultyBadgeBg(program.difficulty)}`}>
             {getDifficultyLabel(program.difficulty)}
@@ -99,7 +85,6 @@ function CatalogCard({ program }: { program: Program }) {
           }
         </div>
 
-        {/* Нижний контент */}
         <div className="absolute bottom-0 left-0 right-0 p-3.5">
           <p className="text-white font-semibold text-sm leading-snug line-clamp-2 mb-2">
             {program.title}
@@ -127,9 +112,6 @@ function CatalogCard({ program }: { program: Program }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Карточка «Мои программы»
-// ---------------------------------------------------------------------------
 function MyProgramCard({
   program,
   showResume,
@@ -143,7 +125,7 @@ function MyProgramCard({
 }) {
   return (
     <div className="group relative rounded-2xl overflow-hidden h-52 shadow-md hover:ring-2 hover:ring-primary/40 transition-all duration-200">
-      {/* Фон */}
+
       {program.image_url ? (
         <Image src={program.image_url} alt={program.title} fill className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
       ) : (
@@ -151,21 +133,18 @@ function MyProgramCard({
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-      {/* Бейдж АКТИВНАЯ */}
       {program.is_active && (
         <span className="absolute top-3 left-3 bg-green-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold animate-pulse shadow">
           АКТИВНАЯ
         </span>
       )}
 
-      {/* Уровень сложности */}
       {program.difficulty && (
         <span className={`absolute top-3 ${program.is_active ? 'left-24' : 'left-3'} text-[11px] font-semibold px-2.5 py-0.5 rounded-full text-white ${getDifficultyBadgeBg(program.difficulty)}`}>
           {getDifficultyLabel(program.difficulty)}
         </span>
       )}
 
-      {/* Нижний контент */}
       <div className="absolute bottom-0 left-0 right-0 p-3.5">
         <p className="text-white font-semibold text-sm line-clamp-1 mb-1">{program.title}</p>
         <div className="flex items-center gap-2 text-white/50 text-[11px] mb-2.5">
@@ -211,9 +190,6 @@ function MyProgramCard({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Главный компонент
-// ---------------------------------------------------------------------------
 function ProgramsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -223,7 +199,6 @@ function ProgramsContent() {
     router.push(tab === 'catalog' ? '/programs' : '/programs?tab=my')
   }
 
-  // --- Каталог ---
   const [programs, setPrograms] = useState<Program[]>([])
   const [myCreated, setMyCreated] = useState<Program[]>([])
   const [isCatalogLoading, setIsCatalogLoading] = useState(true)
@@ -248,7 +223,6 @@ function ProgramsContent() {
     setIsCatalogLoading(false)
   }, [difficultyFilter, showPublicOnly, muscleFilter])
 
-  // --- Мои программы ---
   const [activePrograms, setActivePrograms] = useState<ProgramWithStatus[]>([])
   const [savedPrograms, setSavedPrograms] = useState<ProgramWithStatus[]>([])
   const [historyPrograms, setHistoryPrograms] = useState<ProgramWithStatus[]>([])
@@ -301,13 +275,11 @@ function ProgramsContent() {
 
   const hasMyFilters = !muscleFilter && !difficultyFilter && !searchQuery
 
-  // ---------------------------------------------------------------------------
   return (
     <AuthGuard>
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-4 sm:py-8">
 
-          {/* Заголовок */}
           <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold">Программы</h1>
             <Link href="/programs/create">
@@ -319,7 +291,6 @@ function ProgramsContent() {
             </Link>
           </div>
 
-          {/* Табы */}
           <div className="flex gap-1 mb-6 border-b border-white/10">
             {([
               { id: 'catalog', label: 'Каталог', icon: Globe },
@@ -340,12 +311,9 @@ function ProgramsContent() {
             ))}
           </div>
 
-          {/* ================================================================
-              ТАБ: КАТАЛОГ
-          ================================================================ */}
           {activeTab === 'catalog' && (
             <>
-              {/* Фильтры — компактная строка */}
+
               <div className="flex flex-wrap gap-2 mb-6 items-center">
                 <div className="relative flex-1 min-w-[180px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -392,7 +360,7 @@ function ProgramsContent() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 mb-8">
-                {/* Карта мышц — компактная боковая */}
+
                 <div className="lg:sticky lg:top-20 lg:self-start">
                   <div className="rounded-2xl border border-white/8 bg-card/60 overflow-hidden">
                     <div className="flex items-center justify-between px-4 pt-3 pb-1">
@@ -417,9 +385,8 @@ function ProgramsContent() {
                   </div>
                 </div>
 
-                {/* Список */}
                 <div className="space-y-8">
-                  {/* Мои созданные (без фильтров) */}
+
                   {myCreated.length > 0 && hasMyFilters && (
                     <div>
                       <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Созданные мной</h2>
@@ -429,7 +396,6 @@ function ProgramsContent() {
                     </div>
                   )}
 
-                  {/* Публичные / все */}
                   <div>
                     <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
                       {showPublicOnly ? 'Публичные программы' : 'Все доступные программы'}
@@ -458,9 +424,6 @@ function ProgramsContent() {
             </>
           )}
 
-          {/* ================================================================
-              ТАБ: МОИ ПРОГРАММЫ
-          ================================================================ */}
           {activeTab === 'my' && (
             isMyLoading ? (
               <div className="flex justify-center py-12">

@@ -8,7 +8,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
-const montserrat = Montserrat({ 
+const montserrat = Montserrat({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-montserrat',
@@ -76,4 +76,3 @@ export default function RootLayout({
     </html>
   )
 }
-

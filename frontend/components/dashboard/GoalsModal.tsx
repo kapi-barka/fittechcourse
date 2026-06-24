@@ -122,18 +122,18 @@ export function GoalsModal({ isOpen, onClose, onSaved }: GoalsModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validationError = validateForm()
     if (validationError) {
       toast.error(validationError)
       return
     }
-    
+
     setIsLoading(true)
 
     try {
       const updateData: Partial<UserProfile> = {}
-      
+
       if (formData.target_weight) {
         updateData.target_weight = parseFloat(formData.target_weight)
       }
@@ -189,7 +189,7 @@ export function GoalsModal({ isOpen, onClose, onSaved }: GoalsModalProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8 gap-y-4">
-            {/* Левая колонка: вес и питание */}
+
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Вес и питание</h3>
 
@@ -268,7 +268,6 @@ export function GoalsModal({ isOpen, onClose, onSaved }: GoalsModalProps) {
               </div>
             </div>
 
-            {/* Правая колонка: замеры тела */}
             <div className="space-y-4 sm:border-l sm:pl-8 border-t pt-4 sm:border-t-0 sm:pt-0">
               <h3 className="text-sm font-semibold">Замеры тела</h3>
 
@@ -363,4 +362,3 @@ export function GoalsModal({ isOpen, onClose, onSaved }: GoalsModalProps) {
     </Dialog>
   )
 }
-

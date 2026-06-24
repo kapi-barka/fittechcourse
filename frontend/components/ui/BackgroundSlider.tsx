@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react'
 
 interface BackgroundSliderProps {
   images: string[]
-  duration?: number // Длительность показа одного слайда в мс
-  transitionDuration?: number // Длительность перехода в мс
+  duration?: number
+  transitionDuration?: number
 }
 
-export function BackgroundSlider({ 
-  images, 
+export function BackgroundSlider({
+  images,
   duration = 6000,
-  transitionDuration = 1500 
+  transitionDuration = 1500
 }: BackgroundSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -37,15 +37,15 @@ export function BackgroundSlider({
             zIndex: index === currentIndex ? 1 : 0
           }}
         >
-          <div 
+          <div
             className="w-full h-full bg-cover bg-center animate-ken-burns"
-            style={{ 
+            style={{
               backgroundImage: `url('${img}')`,
-              // Добавляем небольшую случайность для каждой картинки, чтобы движение было интереснее
+
               animationDelay: `${index * 2}s`
             }}
           >
-            {/* Темный оверлей */}
+
             <div className="absolute inset-0 bg-black/70" />
           </div>
         </div>
@@ -53,4 +53,3 @@ export function BackgroundSlider({
     </div>
   )
 }
-

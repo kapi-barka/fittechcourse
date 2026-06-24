@@ -1,6 +1,4 @@
-/**
- * Админ-панель для управления пользователями и контентом
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -34,7 +32,6 @@ import { ArticleForm } from '@/components/admin/ArticleForm'
 import { toast } from 'react-toastify'
 import { cn } from '@/lib/utils'
 
-// ── User initials avatar ─────────────────────────────────────────────────────
 function UserAvatar({ name, email }: { name?: string | null; email: string }) {
   const letters = name
     ? name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -46,7 +43,6 @@ function UserAvatar({ name, email }: { name?: string | null; email: string }) {
   )
 }
 
-// ── Role badge ───────────────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string }) {
   const cls =
     role === 'admin'
@@ -210,7 +206,6 @@ export default function AdminPage() {
     }
   }
 
-  // Filtered lists
   const filteredUsers = users.filter(u => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
@@ -236,7 +231,6 @@ export default function AdminPage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-4 sm:py-8 max-w-5xl">
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <ShieldCheck className="h-7 w-7 text-primary" />
@@ -256,7 +250,6 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* Tabs */}
           <div className="flex gap-1 mb-6 border-b border-white/10 overflow-x-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -275,7 +268,6 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="mb-5">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -292,7 +284,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Content */}
           {isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -300,7 +291,6 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-2">
 
-              {/* ── Users ── */}
               {activeTab === 'users' && (
                 filteredUsers.length === 0 ? (
                   <EmptyState icon={Users} text="Пользователи не найдены" />
@@ -356,7 +346,6 @@ export default function AdminPage() {
                 ))
               )}
 
-              {/* ── Exercises ── */}
               {activeTab === 'exercises' && (
                 filteredExercises.length === 0 ? (
                   <EmptyState icon={Dumbbell} text="Упражнения не найдены" />
@@ -405,7 +394,6 @@ export default function AdminPage() {
                 ))
               )}
 
-              {/* ── Articles ── */}
               {activeTab === 'articles' && (
                 filteredArticles.length === 0 ? (
                   <EmptyState icon={BookOpen} text="Статьи не найдены" />
@@ -476,7 +464,6 @@ export default function AdminPage() {
 
         </main>
 
-        {/* Exercise modal */}
         <Modal
           isOpen={isExerciseModalOpen}
           onClose={() => setIsExerciseModalOpen(false)}
@@ -494,7 +481,6 @@ export default function AdminPage() {
           </div>
         </Modal>
 
-        {/* Article modal */}
         <Modal
           isOpen={isArticleModalOpen}
           onClose={() => setIsArticleModalOpen(false)}

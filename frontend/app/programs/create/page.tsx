@@ -1,6 +1,4 @@
-/**
- * Страница создания тренировочной программы
- */
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -40,7 +38,6 @@ export default function CreateProgramPage() {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Данные программы
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(false)
@@ -144,17 +141,12 @@ export default function CreateProgramPage() {
     }
   }
 
-  // const getExerciseName = (exerciseId: string) => {
-  //   const exercise = exercises.find(e => e.id === exerciseId)
-  //   return exercise?.name || 'Упражнение'
-  // }
-
   return (
     <AuthGuard>
       <div className="min-h-screen">
 
         <main className="container mx-auto px-4 py-8">
-          {/* Заголовок */}
+
           <div className="mb-8">
             <Button
               variant="ghost"
@@ -174,7 +166,7 @@ export default function CreateProgramPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Основная информация */}
+
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle>Основная информация</CardTitle>
@@ -342,7 +334,6 @@ export default function CreateProgramPage() {
               </CardContent>
             </Card>
 
-            {/* Упражнения */}
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -486,7 +477,6 @@ export default function CreateProgramPage() {
               </CardContent>
             </Card>
 
-            {/* Кнопки действий */}
             <div className="flex gap-4">
               <Button
                 type="submit"
@@ -512,5 +502,3 @@ export default function CreateProgramPage() {
     </AuthGuard>
   )
 }
-
-

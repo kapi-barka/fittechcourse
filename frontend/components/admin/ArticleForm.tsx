@@ -113,7 +113,7 @@ export const ArticleForm = ({
       setFormData(prev => ({
         ...prev,
         html_file_url: res.data.url,
-        html_file_name: '' // Очищаем локальное имя, если загружаем на Cloudinary
+        html_file_name: ''
       }))
       toast.success('HTML файл загружен на Cloudinary')
     } catch (error) {
@@ -142,7 +142,7 @@ export const ArticleForm = ({
 
       const results = await Promise.all(uploadPromises)
       const validResults = results.filter((r): r is { url: string; copied: boolean } => r !== null)
-      
+
       setUploadedImages(prev => [...prev, ...validResults])
       toast.success(`Загружено ${validResults.length} изображений`)
     } catch (error) {
@@ -157,14 +157,13 @@ export const ArticleForm = ({
   const copyImageUrl = async (url: string, index: number) => {
     try {
       await navigator.clipboard.writeText(url)
-      setUploadedImages(prev => prev.map((img, i) => 
+      setUploadedImages(prev => prev.map((img, i) =>
         i === index ? { ...img, copied: true } : img
       ))
       toast.success('URL изображения скопирован в буфер обмена')
-      
-      // Сбрасываем флаг через 2 секунды
+
       setTimeout(() => {
-        setUploadedImages(prev => prev.map((img, i) => 
+        setUploadedImages(prev => prev.map((img, i) =>
           i === index ? { ...img, copied: false } : img
         ))
       }, 2000)
@@ -179,19 +178,17 @@ export const ArticleForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Проверяем, что указан либо URL, либо имя файла
+
     if (!formData.html_file_url && !formData.html_file_name.trim()) {
       toast.error('Загрузите HTML файл или укажите имя локального файла')
       return
     }
-    
-    // Если указано имя файла, убеждаемся что оно заканчивается на .html
+
     let htmlFileName = formData.html_file_name
     if (htmlFileName && !htmlFileName.endsWith('.html')) {
       htmlFileName = `${htmlFileName}.html`
     }
-    
+
     await onSubmit({
       ...formData,
       html_file_name: htmlFileName || undefined
@@ -213,8 +210,7 @@ export const ArticleForm = ({
 
       <div className="space-y-2">
         <label className="text-sm font-medium">HTML файл *</label>
-        
-        {/* Загрузка на Cloudinary */}
+
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -245,7 +241,7 @@ export const ArticleForm = ({
               )}
             </Button>
           </div>
-          
+
           {formData.html_file_url && (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
               <p className="text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
@@ -268,7 +264,6 @@ export const ArticleForm = ({
           )}
         </div>
 
-        {/* Или указать локальный файл */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -288,7 +283,7 @@ export const ArticleForm = ({
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          {formData.html_file_url 
+          {formData.html_file_url
             ? 'Используется файл с Cloudinary. Очистите его, чтобы указать локальный файл.'
             : 'Имя файла HTML в папке frontend/articles/ (например: my-article.html)'}
         </p>
@@ -313,7 +308,7 @@ export const ArticleForm = ({
         <p className="text-xs text-muted-foreground mb-2">
           Загрузите изображения, которые можно использовать в HTML статье. После загрузки скопируйте URL и вставьте его в ваш HTML файл.
         </p>
-        
+
         <div className="flex items-center gap-2">
           <input
             type="file"
@@ -417,9 +412,9 @@ export const ArticleForm = ({
             }}
             disabled={formData.tags.length >= 5}
           />
-          <Button 
-            type="button" 
-            onClick={addTag} 
+          <Button
+            type="button"
+            onClick={addTag}
             variant="secondary"
             disabled={formData.tags.length >= 5}
           >
@@ -528,4 +523,3 @@ export const ArticleForm = ({
     </form>
   )
 }
-

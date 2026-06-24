@@ -1,40 +1,29 @@
-/**
- * Утилиты для работы с группами мышц
- * Единая система названий групп мышц для всего приложения
- */
 
-/**
- * Стандартные названия групп мышц (используются в упражнениях и программах)
- * Только конкретные группы мышц, без общих названий (arms, back, legs)
- */
+
 export const STANDARD_MUSCLE_GROUPS = [
-  'chest',          // Грудь
-  'lats',           // Широчайшие мышцы спины
-  'lowerback',      // Поясница
-  'quads',          // Квадрицепсы
-  'hamstrings',     // Бицепс бедра
-  'calves',         // Икры
-  'glutes',         // Ягодицы
-  'shoulders',      // Передние/средние дельты
-  'rear-shoulders', // Задние дельты
-  'triceps',        // Трицепсы
-  'biceps',         // Бицепсы
-  'abdominals',     // Пресс
-  'obliques',       // Косые мышцы живота
-  'traps',          // Трапеции
-  'traps-middle',   // Средняя трапеция
-  'forearms',       // Предплечья
-  'hands',          // Руки
+  'chest',
+  'lats',
+  'lowerback',
+  'quads',
+  'hamstrings',
+  'calves',
+  'glutes',
+  'shoulders',
+  'rear-shoulders',
+  'triceps',
+  'biceps',
+  'abdominals',
+  'obliques',
+  'traps',
+  'traps-middle',
+  'forearms',
+  'hands',
 ] as const
 
 export type StandardMuscleGroup = typeof STANDARD_MUSCLE_GROUPS[number]
 
-/**
- * Маппинг из ID SVG в стандартные названия групп мышц
- * Теперь каждая мышца маппится в свою уникальную группу для точной фильтрации
- */
 const SVG_TO_STANDARD_MAPPING: Record<string, StandardMuscleGroup[]> = {
-  // Front
+
   'chest': ['chest'],
   'shoulders': ['shoulders'],
   'biceps': ['biceps'],
@@ -45,8 +34,7 @@ const SVG_TO_STANDARD_MAPPING: Record<string, StandardMuscleGroup[]> = {
   'calves': ['calves'],
   'traps': ['traps'],
   'hands': ['hands'],
-  
-  // Back
+
   'lats': ['lats'],
   'lowerback': ['lowerback'],
   'rear-shoulders': ['rear-shoulders'],
@@ -56,10 +44,6 @@ const SVG_TO_STANDARD_MAPPING: Record<string, StandardMuscleGroup[]> = {
   'traps-middle': ['traps-middle'],
 }
 
-/**
- * Маппинг из стандартных названий в ID SVG (для отображения на карте)
- * Только конкретные группы мышц
- */
 const STANDARD_TO_SVG_MAPPING: Record<StandardMuscleGroup, { front: string[], back: string[] }> = {
   'chest': { front: ['chest'], back: [] },
   'lats': { front: [], back: ['lats'] },
@@ -80,16 +64,10 @@ const STANDARD_TO_SVG_MAPPING: Record<StandardMuscleGroup, { front: string[], ba
   'hands': { front: ['hands'], back: ['hands'] },
 }
 
-/**
- * Преобразует ID из SVG в стандартные названия групп мышц
- */
 export function svgIdToStandardMuscleGroups(svgId: string): StandardMuscleGroup[] {
   return SVG_TO_STANDARD_MAPPING[svgId.toLowerCase()] || []
 }
 
-/**
- * Преобразует стандартное название группы мышц в ID SVG для отображения на карте
- */
 export function standardMuscleGroupToSvgIds(
   muscleGroup: StandardMuscleGroup,
   mode: 'front' | 'back'
@@ -99,36 +77,28 @@ export function standardMuscleGroupToSvgIds(
   return mode === 'front' ? mapping.front : mapping.back
 }
 
-/**
- * Нормализует название группы мышц к стандартному формату
- * Поддерживает различные варианты написания, включая SVG ID
- * Гарантирует, что каждая мышца из SVG будет кликабельна
- */
 export function normalizeMuscleGroup(muscleGroup: string): StandardMuscleGroup | null {
   const normalized = muscleGroup.toLowerCase().trim()
-  
-  // Прямое совпадение со стандартными названиями
+
   if (STANDARD_MUSCLE_GROUPS.includes(normalized as StandardMuscleGroup)) {
     return normalized as StandardMuscleGroup
   }
-  
-  // Проверяем маппинг из SVG ID в стандартные названия
+
   const svgMapping = SVG_TO_STANDARD_MAPPING[normalized]
   if (svgMapping && svgMapping.length > 0) {
-    // Возвращаем первую группу (можно было бы вернуть все, но для фильтрации достаточно одной)
+
     return svgMapping[0]
   }
-  
-  // Маппинг альтернативных и общих названий в конкретные группы
+
   const alternativeMapping: Record<string, StandardMuscleGroup> = {
-    // Общие названия преобразуем в конкретные (для обратной совместимости)
-    'arms': 'biceps', // "arms" → бицепсы (можно было бы добавить и трицепсы, но для фильтрации выбираем одну)
+
+    'arms': 'biceps',
     'arm': 'biceps',
-    'back': 'lats', // "back" → широчайшие (основная часть спины)
-    'legs': 'quads', // "legs" → квадрицепсы (основная часть ног)
-    'abs': 'abdominals', // Преобразуем abs в abdominals для единообразия
+    'back': 'lats',
+    'legs': 'quads',
+    'abs': 'abdominals',
     'abdominal': 'abdominals',
-    'core': 'abdominals', // "core" → пресс
+    'core': 'abdominals',
     'quadriceps': 'quads',
     'hamstring': 'hamstrings',
     'lat': 'lats',
@@ -136,16 +106,12 @@ export function normalizeMuscleGroup(muscleGroup: string): StandardMuscleGroup |
     'trapezius': 'traps',
     'trapezii': 'traps',
   }
-  
+
   return alternativeMapping[normalized] || null
 }
 
-/**
- * Переводы названий групп мышц на русский язык.
- * Покрывает как стандартные ключи, так и сырые значения из БД.
- */
 export const MUSCLE_GROUP_LABELS: Record<string, string> = {
-  // Стандартные ключи
+
   'chest': 'Грудь',
   'lats': 'Широчайшие',
   'lowerback': 'Поясница',
@@ -163,7 +129,7 @@ export const MUSCLE_GROUP_LABELS: Record<string, string> = {
   'traps-middle': 'Средняя трапеция',
   'forearms': 'Предплечья',
   'hands': 'Руки',
-  // Сырые значения из БД
+
   'back': 'Спина',
   'legs': 'Ноги',
   'arms': 'Руки',
@@ -172,46 +138,30 @@ export const MUSCLE_GROUP_LABELS: Record<string, string> = {
   'hamstring': 'Бицепс бедра',
 }
 
-/**
- * Переводит название группы мышц на русский.
- * Если перевод не найден — возвращает оригинальное значение.
- */
 export function translateMuscleGroup(name: string): string {
   return MUSCLE_GROUP_LABELS[name.toLowerCase()] ?? name
 }
 
-/**
- * Переводит массив групп мышц и объединяет в строку через разделитель.
- */
 export function translateMuscleGroups(names: string[], separator = ', '): string {
   return names.map(translateMuscleGroup).join(separator)
 }
 
-/**
- * Преобразует строку с группами мышц (через запятую) в массив стандартных названий
- */
 export function parseMuscleGroupsString(muscleGroupsString: string): StandardMuscleGroup[] {
   if (!muscleGroupsString) return []
-  
+
   return muscleGroupsString
     .split(',')
     .map(mg => normalizeMuscleGroup(mg.trim()))
     .filter((mg): mg is StandardMuscleGroup => mg !== null)
 }
 
-/**
- * Преобразует массив стандартных названий в строку (через запятую)
- */
 export function formatMuscleGroupsString(muscleGroups: StandardMuscleGroup[]): string {
   return muscleGroups.join(',')
 }
 
-/**
- * Получает все уникальные группы мышц из массива упражнений
- */
 export function extractMuscleGroupsFromExercises(exercises: { muscle_groups?: string[] }[]): StandardMuscleGroup[] {
   const allGroups = new Set<StandardMuscleGroup>()
-  
+
   exercises.forEach(exercise => {
     if (exercise.muscle_groups) {
       exercise.muscle_groups.forEach(mg => {
@@ -222,7 +172,6 @@ export function extractMuscleGroupsFromExercises(exercises: { muscle_groups?: st
       })
     }
   })
-  
+
   return Array.from(allGroups)
 }
-

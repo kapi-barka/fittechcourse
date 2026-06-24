@@ -1,6 +1,4 @@
-/**
- * Модальное окно для добавления приема пищи
- */
+
 'use client'
 
 import { useState } from 'react'
@@ -30,7 +28,6 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
     { value: 'snack',     label: 'Перекус' },
 ]
 
-/** Карточка найденного продукта (используется в обоих табах) */
 function ProductCard({ product }: { product: FoodProduct }) {
     return (
         <div className="rounded-xl border border-white/8 bg-card/60 p-4">
@@ -214,7 +211,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                     <DialogTitle>Добавить приём пищи</DialogTitle>
                 </DialogHeader>
 
-                {/* Tabs */}
                 <div className="flex gap-1 p-1 bg-white/5 rounded-xl mb-2">
                     {([
                         { id: 'barcode', label: 'Штрихкод', icon: Barcode },
@@ -236,7 +232,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                     ))}
                 </div>
 
-                {/* Loading overlay for barcode lookup */}
                 {isLoading && !scannedProduct && (
                     <div className="flex flex-col items-center justify-center py-8 gap-3 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -244,14 +239,13 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                     </div>
                 )}
 
-                {/* Scanner / Recognition */}
                 {!scannedProduct && !isLoading && (
                     activeTab === 'barcode' ? (
                         <BarcodeScanner onScan={handleBarcodeScan} onClose={handleClose} />
                     ) : activeTab === 'photo' ? (
                         <PhotoRecognition onRecognize={handlePhotoRecognition} onClose={handleClose} />
                     ) : (
-                        /* Text tab */
+
                         <div className="space-y-3 py-2">
                             <p className="text-sm text-muted-foreground">
                                 Введите название блюда или продукта — ИИ определит КБЖУ автоматически.
@@ -288,12 +282,10 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                     )
                 )}
 
-                {/* Product found — form */}
                 {scannedProduct && (
                     <div className="space-y-4">
                         <ProductCard product={scannedProduct} />
 
-                        {/* Weight */}
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Вес (граммы)</label>
                             <Input
@@ -308,7 +300,6 @@ export function AddMealModal({ isOpen, onClose, onSuccess }: AddMealModalProps) 
                             />
                         </div>
 
-                        {/* Meal type — pill selector */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium">Приём пищи</label>
                             <div className="grid grid-cols-4 gap-1.5">

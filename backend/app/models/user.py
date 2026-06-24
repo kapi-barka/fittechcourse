@@ -1,6 +1,3 @@
-"""
-Модели пользователя: User (учетные данные) и UserProfile (личная информация)
-"""
 import uuid
 from datetime import datetime, date
 from sqlalchemy import Column, String, Boolean, DateTime, Enum, ForeignKey, Date, Float, Integer
@@ -8,52 +5,36 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
 from app.db.database import Base
-# Avoid circular import by using string references in relationship
-
-
 
 class UserRole(str, enum.Enum):
-    """Роли пользователей в системе"""
     GUEST = "guest"
     USER = "user"
     ADMIN = "admin"
 
-
 class ActivityLevel(str, enum.Enum):
-    """Уровни физической активности"""
-    SEDENTARY = "sedentary"  # Сидячий образ жизни
-    LIGHTLY_ACTIVE = "lightly_active"  # Легкая активность
-    MODERATELY_ACTIVE = "moderately_active"  # Умеренная активность
-    VERY_ACTIVE = "very_active"  # Высокая активность
-    EXTREMELY_ACTIVE = "extremely_active"  # Очень высокая активность
-
+    SEDENTARY = "sedentary"
+    LIGHTLY_ACTIVE = "lightly_active"
+    MODERATELY_ACTIVE = "moderately_active"
+    VERY_ACTIVE = "very_active"
+    EXTREMELY_ACTIVE = "extremely_active"
 
 class Gender(str, enum.Enum):
-    """Пол пользователя"""
     MALE = "male"
     FEMALE = "female"
     OTHER = "other"
 
-
 class FitnessGoal(str, enum.Enum):
-    """Основная цель тренировок"""
-    LOSE_FAT = "lose_fat"            # Похудение
-    GAIN_MUSCLE = "gain_muscle"      # Набор мышечной массы
-    RECOMPOSITION = "recomposition"  # Рекомпозиция тела
-    MAINTAIN = "maintain"            # Поддержание формы
-
+    LOSE_FAT = "lose_fat"
+    GAIN_MUSCLE = "gain_muscle"
+    RECOMPOSITION = "recomposition"
+    MAINTAIN = "maintain"
 
 class ExperienceLevel(str, enum.Enum):
-    """Уровень физической подготовки"""
-    BEGINNER = "beginner"            # Новичок (< 1 года)
-    INTERMEDIATE = "intermediate"    # Средний (1–3 года)
-    ADVANCED = "advanced"            # Продвинутый (3+ лет)
-
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
 
 class User(Base):
-    """
-    Модель пользователя - основная таблица для аутентификации
-    """
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
@@ -65,7 +46,6 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     programs = relationship("Program", back_populates="author", cascade="all, delete-orphan")
     body_metrics = relationship("BodyMetric", back_populates="user", cascade="all, delete-orphan")
@@ -79,39 +59,32 @@ class User(Base):
     recommendations = relationship("WorkoutRecommendation", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
-
 class UserProfile(Base):
-    """
-    Профиль пользователя с личными данными и целями
-    """
     __tablename__ = "user_profiles"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     full_name = Column(String, nullable=True)
     gender = Column(Enum(Gender), nullable=True)
     birth_date = Column(Date, nullable=True)
-    height = Column(Float, nullable=True)  # Рост в см
-    target_weight = Column(Float, nullable=True)  # Целевой вес в кг
-    target_calories = Column(Integer, nullable=True)  # Целевые калории в день
-    target_proteins = Column(Float, nullable=True)  # Целевые белки в день (г)
-    target_fats = Column(Float, nullable=True)  # Целевые жиры в день (г)
-    target_carbs = Column(Float, nullable=True)  # Целевые углеводы в день (г)
-    # Целевые замеры тела
-    target_chest = Column(Float, nullable=True)  # Целевой обхват груди в см
-    target_waist = Column(Float, nullable=True)  # Целевой обхват талии в см
-    target_hips = Column(Float, nullable=True)  # Целевой обхват бедер в см
-    target_biceps = Column(Float, nullable=True)  # Целевой обхват бицепса в см
-    target_thigh = Column(Float, nullable=True)  # Целевой обхват бедра в см
+    height = Column(Float, nullable=True)
+    target_weight = Column(Float, nullable=True)
+    target_calories = Column(Integer, nullable=True)
+    target_proteins = Column(Float, nullable=True)
+    target_fats = Column(Float, nullable=True)
+    target_carbs = Column(Float, nullable=True)
+
+    target_chest = Column(Float, nullable=True)
+    target_waist = Column(Float, nullable=True)
+    target_hips = Column(Float, nullable=True)
+    target_biceps = Column(Float, nullable=True)
+    target_thigh = Column(Float, nullable=True)
     activity_level = Column(Enum(ActivityLevel), default=ActivityLevel.SEDENTARY, nullable=True)
     fitness_goal = Column(Enum(FitnessGoal), nullable=True)
     experience_level = Column(Enum(ExperienceLevel), nullable=True)
 
-    # Active Program
     current_program_id = Column(UUID(as_uuid=True), ForeignKey("programs.id", ondelete="SET NULL"), nullable=True)
     current_program_start_date = Column(Date, nullable=True)
     avatar_url = Column(String, nullable=True)
 
-    # Relationship
     user = relationship("User", back_populates="profile")
     current_program = relationship("Program", foreign_keys=[current_program_id])
-

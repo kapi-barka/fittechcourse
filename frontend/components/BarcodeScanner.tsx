@@ -1,6 +1,4 @@
-/**
- * Компонент для сканирования штрихкодов
- */
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -173,7 +171,7 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
 
     return (
         <div className="space-y-3">
-            {/* Viewfinder */}
+
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ height: 220 }}>
                 {previewImage ? (
                     <>
@@ -194,7 +192,7 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
                                 <span className="text-sm">Обработка...</span>
                             </div>
                         )}
-                        {/* Scanning frame overlay */}
+
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="w-52 h-24 border-2 border-primary/70 rounded-lg" />
                         </div>
@@ -209,14 +207,12 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
                 <canvas ref={canvasRef} className="hidden" />
             </div>
 
-            {/* Error */}
             {error && (
                 <div className="px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl text-xs">
                     {error}
                 </div>
             )}
 
-            {/* Action buttons */}
             <div className="grid grid-cols-2 gap-2">
                 {!isScanning ? (
                     <>
@@ -256,7 +252,6 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
                 )}
             </div>
 
-            {/* Manual input */}
             <div className="flex gap-2">
                 <Input
                     type="text"

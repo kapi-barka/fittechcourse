@@ -1,6 +1,4 @@
-/**
- * Zustand store для управления состоянием аутентификации
- */
+
 import { create } from 'zustand'
 import { authAPI, usersAPI, User } from '@/lib/api'
 
@@ -20,7 +18,6 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
 
-  // Actions
   login: (email: string, password: string) => Promise<void>
   googleLogin: (credential: string) => Promise<void>
   register: (email: string, password: string, fullName?: string) => Promise<void>
@@ -61,7 +58,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authAPI.register(email, password, fullName)
 
-      // После регистрации автоматически логинимся
       await useAuthStore.getState().login(email, password)
     } catch (error) {
       console.error('Registration error:', error)
@@ -70,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    // Удаляем токены
+
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
 
@@ -113,4 +109,3 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user })
   },
 }))
-

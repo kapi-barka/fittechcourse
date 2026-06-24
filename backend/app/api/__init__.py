@@ -1,12 +1,8 @@
-"""
-API роутеры
-"""
 from fastapi import APIRouter
 from app.api.routes import auth, users, programs, nutrition, articles, exercises, metrics, schedule, upload, user_programs, analytics, recommendations, coach
 
 api_router = APIRouter()
 
-# Подключаем все роутеры
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(upload.router, prefix="/upload", tags=["Upload"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
@@ -20,4 +16,3 @@ api_router.include_router(user_programs.router, prefix="/my", tags=["User Progra
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["Recommendations"])
 api_router.include_router(coach.router, prefix="/coach", tags=["AI Coach"])
-

@@ -1,11 +1,8 @@
-/**
- * API клиент с автоматической подстановкой JWT токена
- */
+
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
-// Создаем экземпляр axios с базовой конфигурацией
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -13,12 +10,9 @@ export const api = axios.create({
   },
 })
 
-/**
- * Interceptor для добавления JWT токена к каждому запросу
- */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Получаем токен из localStorage
+
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token')
       if (token && config.headers) {
@@ -32,20 +26,16 @@ api.interceptors.request.use(
   }
 )
 
-/**
- * Interceptor для обработки ошибок аутентификации
- */
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Если токен истек или невалиден (401), перенаправляем на логин
+
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        // Не перенаправляем, если ошибка произошла при попытке входа
-        // (чтобы пользователь мог увидеть сообщение об ошибке)
+
         const requestUrl = error.config?.url || ''
         const isLoginRequest = requestUrl.includes('/auth/login')
-        
+
         if (!isLoginRequest) {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
@@ -56,8 +46,6 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-// ============ Типы данных ============
 
 export interface User {
   id: string
@@ -255,9 +243,6 @@ export interface WorkoutRecommendation {
   }
 }
 
-// ============ API функции ============
-
-// Расписание и трекинг
 export const scheduleAPI = {
   startProgram: (programId: string) => api.post(`/schedule/start/${programId}`),
 
@@ -288,7 +273,6 @@ export const scheduleAPI = {
     api.get<WorkoutLog[]>('/schedule/history', { params }),
 }
 
-// Рекомендации
 export const recommendationsAPI = {
   getToday: (date?: string) =>
     api.get<WorkoutRecommendation>('/recommendations/today', { params: { target_date: date } }),
@@ -320,7 +304,6 @@ export const recommendationsAPI = {
   }) => api.post('/recommendations/log-exercise', data),
 }
 
-// Аутентификация
 export const authAPI = {
   register: (email: string, password: string, full_name?: string) =>
     api.post<User>('/auth/register', { email, password, full_name }),
@@ -332,7 +315,6 @@ export const authAPI = {
     api.post<Token>('/auth/google', { credential }),
 }
 
-// Пользователи
 export const usersAPI = {
   getMe: () => api.get<User>('/users/me'),
   updateProfile: (data: Partial<UserProfile>) => api.put<UserProfile>('/users/me/profile', data),
@@ -342,7 +324,6 @@ export const usersAPI = {
   getDailyAdvice: () => api.get<{ advice: string; date: string }>('/users/me/daily-advice'),
 }
 
-// Программы тренировок
 export const programsAPI = {
   list: (params?: { skip?: number; limit?: number; difficulty?: string; public_only?: boolean; muscle_group?: string }) =>
     api.get<Program[]>('/programs/', { params }),
@@ -358,7 +339,6 @@ export const programsAPI = {
   getMy: () => api.get<Program[]>('/programs/my/programs'),
 }
 
-// Упражнения
 export const exercisesAPI = {
   list: (params?: { skip?: number; limit?: number; muscle_group?: string }) =>
     api.get<Exercise[]>('/exercises/', { params }),
@@ -372,7 +352,6 @@ export const exercisesAPI = {
   delete: (id: string) => api.delete(`/exercises/${id}`),
 }
 
-// Метрики тела
 export const metricsAPI = {
   list: (params?: { from_date?: string; to_date?: string }) =>
     api.get<BodyMetric[]>('/metrics/', { params }),
@@ -386,18 +365,16 @@ export const metricsAPI = {
   delete: (id: string) => api.delete(`/metrics/${id}`),
 }
 
-// Питание
 export const nutritionAPI = {
-  // Продукты
+
   listProducts: (params?: { search?: string; category?: string }) =>
     api.get<FoodProduct[]>('/nutrition/products', { params }),
 
   createProduct: (data: Partial<FoodProduct>) => api.post<FoodProduct>('/nutrition/products', data),
 
-  createProductFromRecognition: (data: Partial<FoodProduct>) => 
+  createProductFromRecognition: (data: Partial<FoodProduct>) =>
     api.post<FoodProduct>('/nutrition/products/from-recognition', data),
 
-  // Штрихкоды
   lookupBarcode: (barcode: string) =>
     api.post<FoodProduct>('/nutrition/lookup-barcode', { barcode }),
 
@@ -452,7 +429,6 @@ export const nutritionAPI = {
     eaten_at?: string;
   }) => api.post<NutritionLog>('/nutrition/logs/from-barcode', data),
 
-  // Дневник питания
   listLogs: (params?: { from_date?: string; to_date?: string; meal_type?: string }) =>
     api.get<NutritionLog[]>('/nutrition/logs', { params }),
 
@@ -462,11 +438,9 @@ export const nutritionAPI = {
 
   deleteLog: (id: string) => api.delete(`/nutrition/logs/${id}`),
 
-  // Статистика
   getDailySummary: (date?: string) =>
     api.get('/nutrition/summary/daily', { params: { target_date: date } }),
 
-  // Гидратация
   logWater: (amount_ml: number) =>
     api.post('/nutrition/hydration/log', { amount_ml }),
 
@@ -478,7 +452,6 @@ export const nutritionAPI = {
     }>('/nutrition/hydration/today'),
 }
 
-// Статьи
 export const articlesAPI = {
   list: (params?: { search?: string; tag?: string; published_only?: boolean }) =>
     api.get<Article[]>('/articles/', { params }),
@@ -492,13 +465,11 @@ export const articlesAPI = {
   delete: (id: string) => api.delete(`/articles/${id}`),
 }
 
-// Пользовательские программы
 export const userProgramsAPI = {
   list: (status?: string) => api.get<ProgramWithStatus[]>('/my/', { params: { status } }),
   toggleSave: (programId: string) => api.post<{ message: string, is_saved: boolean, previous_status?: string }>(`/my/save/${programId}`),
 }
 
-// Загрузка файлов
 export const uploadAPI = {
   uploadFile: (file: File, folder?: string) => {
     const formData = new FormData()
@@ -514,7 +485,6 @@ export const uploadAPI = {
   },
 }
 
-// Аналитика
 export interface WeightPrediction {
   has_enough_data: boolean
   reason?: string
@@ -523,9 +493,9 @@ export interface WeightPrediction {
   capped?: boolean
   current_weight?: number
   target_weight?: number
-  predicted_date?: string   // YYYY-MM-DD
+  predicted_date?: string
   days_remaining?: number
-  weekly_rate?: number      // кг/неделю, отрицательный = похудение
+  weekly_rate?: number
   r_squared?: number
   projection: Array<{ date: string; weight: number }>
 }
@@ -547,7 +517,6 @@ export const analyticsAPI = {
     api.get<WeightPrediction>('/analytics/weight-prediction'),
 }
 
-// AI-тренер (история и очистка; стрим через fetch напрямую)
 export const coachAPI = {
   getHistory: () =>
     api.get<{ id: string; role: string; content: string; created_at: string }[]>('/coach/history'),
@@ -556,4 +525,3 @@ export const coachAPI = {
 }
 
 export default api
-

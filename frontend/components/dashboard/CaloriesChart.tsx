@@ -39,15 +39,14 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
   const chartData = useMemo(() => {
     if (logs.length === 0) return []
 
-    // Группировка по дням с суммированием всех макронутриентов
     const dailyMap = new Map<string, { calories: number; proteins: number; fats: number; carbs: number }>()
-    
+
     logs.forEach(log => {
       if (!log.eaten_at) return
-      
+
       const dateKey = format(parseISO(log.eaten_at), 'yyyy-MM-dd')
       const current = dailyMap.get(dateKey) || { calories: 0, proteins: 0, fats: 0, carbs: 0 }
-      
+
       dailyMap.set(dateKey, {
         calories: current.calories + (log.calories || 0),
         proteins: current.proteins + (log.proteins || 0),
@@ -66,14 +65,14 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
         carbs: Math.round(values.carbs),
         fullDate: format(parseISO(dateStr), 'd MMMM yyyy', { locale: ru }),
       }))
-      .slice(-7) // Только последние 7 активных дней
+      .slice(-7)
   }, [logs])
 
   const toggleMetric = (metric: NutritionType) => {
     setSelectedMetrics(prev => {
       const newSet = new Set(prev)
       if (newSet.has(metric)) {
-        // Не позволяем убрать последнюю метрику
+
         if (newSet.size > 1) {
           newSet.delete(metric)
         }
@@ -84,10 +83,9 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
     })
   }
 
-  // Проверяем наличие данных для выбранных метрик
   const hasData = useMemo(() => {
     if (chartData.length === 0) return false
-    return Array.from(selectedMetrics).some(metric => 
+    return Array.from(selectedMetrics).some(metric =>
       chartData.some(d => d[metric] != null && d[metric] > 0)
     )
   }, [chartData, selectedMetrics])
@@ -127,7 +125,7 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
         <CardDescription>Последние 7 активных дней</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col overflow-hidden pt-0">
-        {/* Фильтры метрик */}
+
         <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
           {(Object.keys(nutritionConfig) as NutritionType[]).map((metric) => {
             const config = nutritionConfig[metric]
@@ -200,9 +198,9 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
               {selectedMetrics.has('calories') && (
                 <Bar dataKey="calories" radius={[4, 4, 0, 0]} fill={nutritionConfig.calories.color} name="calories">
                   {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-calories-${index}`} 
-                      fill={targetCalories && entry.calories > targetCalories ? '#ef4444' : nutritionConfig.calories.color} 
+                    <Cell
+                      key={`cell-calories-${index}`}
+                      fill={targetCalories && entry.calories > targetCalories ? '#ef4444' : nutritionConfig.calories.color}
                     />
                   ))}
                 </Bar>
@@ -223,4 +221,3 @@ export function CaloriesChart({ logs, targetCalories }: CaloriesChartProps) {
     </Card>
   )
 }
-

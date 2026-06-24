@@ -1,18 +1,3 @@
-"""
-AI-тренер с Gemini Function Calling (Tool Use).
-
-Архитектура:
-  Вместо дампа всех данных в промпт — модель сама вызывает инструменты:
-
-  User: "Почему не растёт грудь?"
-    → Gemini: functionCall(get_workout_history, days=60)
-    → DB query → результат
-    → Gemini: functionCall(get_body_metrics, days=90)
-    → DB query → результат
-    → Gemini: текстовый ответ с анализом
-
-Это ReAct-паттерн (Reasoning + Acting), стандарт production AI-агентов.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -26,12 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-_CHUNK_SIZE   = 12      # символов за одну выдачу при симуляции стриминга
-_MAX_ITERS    = 8       # максимум итераций agentic loop (защита от зацикливания)
-
-# ────────────────────────────────────────────────────────────
-# Системный промпт — минимальный, без данных
-# ────────────────────────────────────────────────────────────
+_CHUNK_SIZE   = 12
+_MAX_ITERS    = 8
 
 _SYSTEM_PROMPT = f"""Ты — личный тренер. Отвечаешь коротко и по делу, как живой человек в переписке. Сегодня: {date.today().strftime('%d.%m.%Y')}.
 
@@ -52,11 +33,6 @@ _SYSTEM_PROMPT = f"""Ты — личный тренер. Отвечаешь ко
 - "8 тренировок из 12 за месяц" — хорошо. "Тренируйся чаще" — плохо.
 - "98г белка при цели 160г" — хорошо. "Следи за белком" — плохо.
 - Если данных нет — скажи прямо."""
-
-
-# ────────────────────────────────────────────────────────────
-# Описание инструментов (Tool Declarations)
-# ────────────────────────────────────────────────────────────
 
 TOOL_DECLARATIONS = [
     {
@@ -151,11 +127,6 @@ TOOL_DECLARATIONS = [
     },
 ]
 
-
-# ────────────────────────────────────────────────────────────
-# Реализация инструментов (DB-запросы)
-# ────────────────────────────────────────────────────────────
-
 async def _tool_get_user_profile(user_id: str, db: AsyncSession) -> dict:
     from app.models.user import User, UserProfile
 
@@ -215,7 +186,6 @@ async def _tool_get_user_profile(user_id: str, db: AsyncSession) -> dict:
         },
     }
 
-
 async def _tool_get_workout_history(user_id: str, db: AsyncSession, days: int = 30) -> dict:
     from app.models.program import WorkoutLog, Program
 
@@ -245,14 +215,12 @@ async def _tool_get_workout_history(user_id: str, db: AsyncSession, days: int = 
         "workouts": workouts,
     }
 
-
 async def _tool_get_nutrition_summary(user_id: str, db: AsyncSession, days: int = 7) -> dict:
     from app.models.nutrition import NutritionLog, FoodProduct
     from app.models.user import UserProfile
 
     since = datetime.combine(date.today() - timedelta(days=days), datetime.min.time())
 
-    # Цели
     profile_res = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
     profile = profile_res.scalar_one_or_none()
 
@@ -275,7 +243,6 @@ async def _tool_get_nutrition_summary(user_id: str, db: AsyncSession, days: int 
         daily[day]["fats"]     += prod.fats     * f
         daily[day]["carbs"]    += prod.carbs     * f
 
-    # Округляем
     for d in daily.values():
         for k in d:
             d[k] = round(d[k], 1)
@@ -292,7 +259,6 @@ async def _tool_get_nutrition_summary(user_id: str, db: AsyncSession, days: int 
         "days_tracked": len(daily),
     }
 
-
 _MEAL_TYPE_LABELS = {
     "breakfast": "завтрак",
     "lunch": "обед",
@@ -300,7 +266,6 @@ _MEAL_TYPE_LABELS = {
     "snack": "перекус",
     "other": "другое",
 }
-
 
 async def _tool_get_nutrition_logs(
     user_id: str,
@@ -360,7 +325,6 @@ async def _tool_get_nutrition_logs(
         "entries": entries,
     }
 
-
 async def _tool_get_body_metrics(user_id: str, db: AsyncSession, days: int = 90) -> dict:
     from app.models.metrics import BodyMetric
     from app.models.user import UserProfile
@@ -400,7 +364,6 @@ async def _tool_get_body_metrics(user_id: str, db: AsyncSession, days: int = 90)
             for m in metrics
         ],
     }
-
 
 async def _tool_get_active_program(user_id: str, db: AsyncSession) -> dict:
     from app.models.user import UserProfile
@@ -444,13 +407,7 @@ async def _tool_get_active_program(user_id: str, db: AsyncSession) -> dict:
         "days":        days,
     }
 
-
-# ────────────────────────────────────────────────────────────
-# Диспетчер инструментов
-# ────────────────────────────────────────────────────────────
-
 def _make_executor(user_id: str, db: AsyncSession) -> Callable:
-    """Возвращает async-функцию, которая выполняет нужный инструмент по имени."""
     async def execute(name: str, args: dict) -> dict:
         days = int(args.get("days", 30))
         try:
@@ -480,14 +437,8 @@ def _make_executor(user_id: str, db: AsyncSession) -> Callable:
             return {"error": str(exc)}
     return execute
 
-
-# ────────────────────────────────────────────────────────────
-# Gemini API — вспомогательные функции
-# ────────────────────────────────────────────────────────────
-
 async def _get_available_gemini_model(api_key: str) -> Optional[tuple[str, str]]:
     return "v1beta", "gemini-2.5-flash"
-
 
 async def _gemini_request(
     contents: list[dict],
@@ -495,7 +446,6 @@ async def _gemini_request(
     model: str,
     api_key: str,
 ) -> dict:
-    """Один POST-запрос к Gemini generateContent."""
     import httpx
 
     payload: dict[str, Any] = {
@@ -514,11 +464,6 @@ async def _gemini_request(
             raise RuntimeError(f"Gemini HTTP {resp.status_code}: {resp.text[:300]}")
         return resp.json()
 
-
-# ────────────────────────────────────────────────────────────
-# Agentic Loop — ReAct (Reasoning + Acting)
-# ────────────────────────────────────────────────────────────
-
 async def _agentic_loop(
     conversation: list[dict],
     executor: Callable,
@@ -526,12 +471,6 @@ async def _agentic_loop(
     model: str,
     api_key: str,
 ) -> AsyncGenerator[str, None]:
-    """
-    Основной цикл агента:
-      1. Отправляем запрос в Gemini
-      2. Если ответ содержит functionCall — выполняем, добавляем результат, повторяем
-      3. Если ответ текстовый — стримим чанками
-    """
     for iteration in range(_MAX_ITERS):
         response = await _gemini_request(conversation, api_ver, model, api_key)
 
@@ -548,10 +487,9 @@ async def _agentic_loop(
         text_parts     = [p["text"] for p in parts if "text" in p]
 
         if function_calls:
-            # Добавляем ответ модели (с functionCall) в историю
+
             conversation.append({"role": "model", "parts": parts})
 
-            # Выполняем все вызовы, формируем functionResponse
             responses = []
             for fc in function_calls:
                 name = fc["name"]
@@ -566,10 +504,9 @@ async def _agentic_loop(
                 })
 
             conversation.append({"role": "user", "parts": responses})
-            # Следующая итерация
 
         elif text_parts:
-            # Финальный текстовый ответ — стримим
+
             text = "".join(text_parts)
             logger.info(f"AI coach final answer ({len(text)} chars, {iteration+1} iters)")
             for i in range(0, len(text), _CHUNK_SIZE):
@@ -578,16 +515,11 @@ async def _agentic_loop(
             return
 
         else:
-            # Пустой ответ
+
             yield "Не удалось получить ответ от AI."
             return
 
     yield "\n\n⚠️ Достигнут лимит итераций. Попробуйте переформулировать вопрос."
-
-
-# ────────────────────────────────────────────────────────────
-# Публичный интерфейс
-# ────────────────────────────────────────────────────────────
 
 async def stream_coach_response(
     messages: list[dict],
@@ -597,20 +529,14 @@ async def stream_coach_response(
     vertex_project: Optional[str] = None,
     vertex_location: str = "us-central1",
 ) -> AsyncGenerator[str, None]:
-    """
-    Точка входа для AI-тренера.
-    messages — история чата в формате Gemini (role/parts).
-    """
     if not gemini_api_key and not vertex_project:
         raise ValueError("Не задан ни GOOGLE_GEMINI_API_KEY, ни GOOGLE_CLOUD_PROJECT")
 
-    # Находим доступную модель
     model_info = await _get_available_gemini_model(gemini_api_key)
     if not model_info:
         raise RuntimeError("Не удалось определить доступную Gemini-модель")
     api_ver, model = model_info
 
-    # Формируем conversation: системный промпт + история
     conversation: list[dict] = [
         {"role": "user",  "parts": [{"text": _SYSTEM_PROMPT}]},
         {"role": "model", "parts": [{"text": "Понял, готов помогать."}]},

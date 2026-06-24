@@ -1,10 +1,3 @@
-"""
-AI-тренер: эндпоинты для чата, истории и очистки истории.
-
-POST /coach/chat        — стримит ответ AI через SSE
-GET  /coach/history     — последние N сообщений
-DELETE /coach/history   — очистить историю чата
-"""
 import json
 import logging
 from fastapi import APIRouter, Depends
@@ -23,12 +16,10 @@ from app.services.ai_coach import stream_coach_response
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-HISTORY_WINDOW = 20  # кол-во сообщений, передаваемых в контекст Gemini
-
+HISTORY_WINDOW = 20
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
-
 
 class ChatMessageOut(BaseModel):
     id: str
@@ -39,28 +30,14 @@ class ChatMessageOut(BaseModel):
     class Config:
         from_attributes = True
 
-
-# ─────────────────────────────────────────────────
-# POST /coach/chat  — SSE-стрим
-# ─────────────────────────────────────────────────
-
 @router.post("/chat")
 async def chat_with_coach(
     request: ChatRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Принимает сообщение пользователя, формирует контекст из его данных,
-    запрашивает Gemini и возвращает ответ в виде Server-Sent Events.
-
-    Формат событий:
-      data: {"type": "chunk", "text": "..."}  — порция текста
-      data: {"type": "done"}                  — конец стрима
-      data: {"type": "error", "text": "..."}  — ошибка
-    """
     async def generate():
-        # 1. Сохраняем сообщение пользователя
+
         user_msg = ChatMessage(
             user_id=current_user.id,
             role="user",
@@ -69,7 +46,6 @@ async def chat_with_coach(
         db.add(user_msg)
         await db.commit()
 
-        # 2. Загружаем историю (последние HISTORY_WINDOW сообщений)
         hist_res = await db.execute(
             select(ChatMessage)
             .where(ChatMessage.user_id == current_user.id)
@@ -78,7 +54,6 @@ async def chat_with_coach(
         )
         history = list(reversed(hist_res.scalars().all()))
 
-        # 4. Конвертируем в формат Gemini
         gemini_messages = [
             {
                 "role": "user" if m.role == "user" else "model",
@@ -87,7 +62,6 @@ async def chat_with_coach(
             for m in history
         ]
 
-        # 5. Стримим ответ (agentic loop с function calling)
         full_response = ""
         try:
             async for chunk in stream_coach_response(
@@ -106,7 +80,6 @@ async def chat_with_coach(
             yield f"data: {json.dumps({'type': 'error', 'text': err_text})}\n\n"
             return
 
-        # 6. Сохраняем ответ ассистента
         if full_response:
             assistant_msg = ChatMessage(
                 user_id=current_user.id,
@@ -128,18 +101,12 @@ async def chat_with_coach(
         },
     )
 
-
-# ─────────────────────────────────────────────────
-# GET /coach/history
-# ─────────────────────────────────────────────────
-
 @router.get("/history")
 async def get_chat_history(
     limit: int = 50,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает последние `limit` сообщений чата."""
     res = await db.execute(
         select(ChatMessage)
         .where(ChatMessage.user_id == current_user.id)
@@ -157,17 +124,11 @@ async def get_chat_history(
         for m in messages
     ]
 
-
-# ─────────────────────────────────────────────────
-# DELETE /coach/history
-# ─────────────────────────────────────────────────
-
 @router.delete("/history")
 async def clear_chat_history(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Удаляет всю историю чата текущего пользователя."""
     await db.execute(
         delete(ChatMessage).where(ChatMessage.user_id == current_user.id)
     )

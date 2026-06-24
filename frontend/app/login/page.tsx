@@ -1,6 +1,4 @@
-/**
- * Страница входа в систему
- */
+
 'use client'
 
 import { useState } from 'react'
@@ -47,11 +45,11 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: "url('/login-bg.jpg')" }}
     >
-      {/* Overlay for better readability */}
+
       <div className="absolute inset-0 bg-black/50 z-0" />
 
       <div className="w-full max-w-md z-10 relative">
-        {/* Logo */}
+
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <div className="relative h-16 w-16 overflow-hidden rounded-2xl shadow-lg">
@@ -170,4 +168,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

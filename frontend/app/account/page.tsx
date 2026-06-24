@@ -1,6 +1,4 @@
-/**
- * Страница профиля пользователя
- */
+
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
@@ -23,7 +21,6 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-toastify'
 
-// ── Styled select ────────────────────────────────────────────────────────────
 function SelectField({
   label,
   value,
@@ -52,7 +49,6 @@ function SelectField({
   )
 }
 
-// ── Section header ───────────────────────────────────────────────────────────
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
     <div className="flex items-center gap-2 pt-2">
@@ -132,7 +128,6 @@ export default function AccountPage() {
       <div className="min-h-screen">
         <main className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <User className="h-7 w-7 text-primary" />
@@ -147,7 +142,6 @@ export default function AccountPage() {
             </Button>
           </div>
 
-          {/* Avatar card */}
           <div className="rounded-2xl border border-white/8 bg-card/60 p-6 mb-4 flex items-center gap-5">
             <div
               className="relative h-20 w-20 rounded-full overflow-hidden cursor-pointer group shrink-0"
@@ -198,10 +192,8 @@ export default function AccountPage() {
             />
           </div>
 
-          {/* Form card */}
           <div className="rounded-2xl border border-white/8 bg-card/60 p-6 space-y-5">
 
-            {/* Personal */}
             <SectionHeader icon={User} label="Личные данные" />
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground/80">Полное имя</label>
@@ -248,7 +240,6 @@ export default function AccountPage() {
               <option value="other">Другой</option>
             </SelectField>
 
-            {/* Fitness */}
             <SectionHeader icon={Activity} label="Активность и цели" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -277,7 +268,6 @@ export default function AccountPage() {
               <option value="advanced">Продвинутый (3+ лет)</option>
             </SelectField>
 
-            {/* Email (readonly) */}
             <div className="pt-1 border-t border-white/8 space-y-1.5">
               <label className="text-sm font-medium text-foreground/80 flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />Email

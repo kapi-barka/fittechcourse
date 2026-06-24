@@ -1,6 +1,4 @@
-/**
- * Страница регистрации
- */
+
 'use client'
 
 import { useState } from 'react'
@@ -60,11 +58,11 @@ export default function RegisterPage() {
       className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: "url('/login-bg.jpg')" }}
     >
-      {/* Overlay for better readability */}
+
       <div className="absolute inset-0 bg-black/50 z-0" />
 
       <div className="w-full max-w-md z-10 relative">
-        {/* Logo */}
+
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg">

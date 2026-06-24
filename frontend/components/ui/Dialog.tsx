@@ -1,6 +1,4 @@
-/**
- * Dialog (Modal) component
- */
+
 'use client'
 
 import { useEffect, useRef } from 'react'
@@ -38,13 +36,12 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 
     const dialogContent = (
         <div className="fixed inset-0 z-40 flex items-center justify-center pt-20">
-            {/* Backdrop */}
+
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
                 onClick={() => onOpenChange(false)}
             />
 
-            {/* Dialog content */}
             <div
                 ref={dialogRef}
                 className="relative z-40 w-full animate-in fade-in-0 zoom-in-95"

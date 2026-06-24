@@ -1,6 +1,4 @@
-/**
- * Дневник — питание, замеры, вода
- */
+
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react'
@@ -22,8 +20,6 @@ import { format } from 'date-fns'
 import { formatDate, round, cn } from '@/lib/utils'
 import { toast } from 'react-toastify'
 
-// ── Утилиты ─────────────────────────────────────────────────
-
 function todayDateStr() {
   return format(new Date(), 'yyyy-MM-dd')
 }
@@ -41,8 +37,6 @@ const MEAL_CONFIG: Record<string, { label: string; icon: React.ElementType; acce
 }
 
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'other']
-
-// ── Кольцо калорий ──────────────────────────────────────────
 
 function CalorieRing({ value, target }: { value: number; target: number }) {
   const r = 42
@@ -72,8 +66,6 @@ function CalorieRing({ value, target }: { value: number; target: number }) {
   )
 }
 
-// ── Прогресс макроса ────────────────────────────────────────
-
 function MacroBar({
   label, value, target, icon: Icon, color, trackColor,
 }: {
@@ -96,8 +88,6 @@ function MacroBar({
     </div>
   )
 }
-
-// ── Группа приёмов пищи ─────────────────────────────────────
 
 function MealGroup({
   type, logs, onEdit, onDelete,
@@ -166,8 +156,6 @@ function MealGroup({
   )
 }
 
-// ── Основной компонент ──────────────────────────────────────
-
 function DiaryContent() {
   const searchParams = useSearchParams()
   const initialTab = (searchParams.get('tab') as 'nutrition' | 'metrics' | 'hydration') || 'nutrition'
@@ -206,13 +194,13 @@ function DiaryContent() {
       ])
       setNutritionLogs(logsRes.data)
       setDailySummary(sumRes.data)
-    } catch { /* silent */ }
+    } catch {  }
     setIsLoading(false)
   }
 
   const fetchMetrics = async () => {
     setIsLoading(true)
-    try { setMetrics((await metricsAPI.list()).data) } catch { /* silent */ }
+    try { setMetrics((await metricsAPI.list()).data) } catch {  }
     setIsLoading(false)
   }
 
@@ -247,7 +235,6 @@ function DiaryContent() {
     catch { toast.error('Ошибка') }
   }
 
-  // Группировка по типу приёма
   const grouped = MEAL_ORDER.reduce<Record<string, NutritionLog[]>>((acc, t) => {
     acc[t] = nutritionLogs.filter(l => (l.meal_type || 'other') === t)
     return acc
@@ -263,7 +250,6 @@ function DiaryContent() {
     <AuthGuard>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
-        {/* ── Табы ──────────────────────────────────── */}
         <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
@@ -281,10 +267,9 @@ function DiaryContent() {
           ))}
         </div>
 
-        {/* ══════════════ ПИТАНИЕ ══════════════ */}
         {activeTab === 'nutrition' && (
           <div className="space-y-4">
-            {/* Заголовок дня */}
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Сегодня</p>
@@ -298,7 +283,6 @@ function DiaryContent() {
               </button>
             </div>
 
-            {/* Сводка: кольцо + макросы */}
             <div className="rounded-2xl border border-white/8 bg-card/60 p-4 flex items-center gap-5">
               <CalorieRing
                 value={dailySummary.total_calories}
@@ -312,7 +296,6 @@ function DiaryContent() {
               </div>
             </div>
 
-            {/* Приёмы пищи */}
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
             ) : nutritionLogs.length === 0 ? (
@@ -344,10 +327,9 @@ function DiaryContent() {
           </div>
         )}
 
-        {/* ══════════════ ЗАМЕРЫ ══════════════ */}
         {activeTab === 'metrics' && (
           <div className="space-y-5">
-            {/* Форма */}
+
             <div className="rounded-2xl border border-white/8 bg-card/60 p-5">
               <p className="text-sm font-semibold mb-4">Новый замер</p>
               <form onSubmit={handleAddMetric} className="space-y-4">
@@ -378,7 +360,6 @@ function DiaryContent() {
               </form>
             </div>
 
-            {/* История */}
             {isLoading ? (
               <div className="text-center py-10 text-muted-foreground text-sm">Загрузка...</div>
             ) : metrics.length === 0 ? (
@@ -419,11 +400,9 @@ function DiaryContent() {
           </div>
         )}
 
-        {/* ══════════════ ВОДА ══════════════ */}
         {activeTab === 'hydration' && <WaterTracker />}
       </div>
 
-      {/* Модалки */}
       <AddMealModal isOpen={isAddMealModalOpen} onClose={() => setIsAddMealModalOpen(false)} onSuccess={fetchNutrition} />
       <EditMetricModal isOpen={editingMetric !== null} onClose={() => setEditingMetric(null)} metric={editingMetric} onSuccess={fetchMetrics} />
       <EditLogModal isOpen={editingLog !== null} onClose={() => setEditingLog(null)} log={editingLog} onSuccess={fetchNutrition} />

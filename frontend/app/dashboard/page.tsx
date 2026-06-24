@@ -1,6 +1,4 @@
-/**
- * Главная страница дашборда с обзором прогресса
- */
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -22,7 +20,6 @@ import {
 import Link from 'next/link'
 import { subDays, format } from 'date-fns'
 
-// ── Calorie Ring (SVG) ──────────────────────────────────────────────
 function CalorieRing({
   consumed,
   target,
@@ -51,7 +48,6 @@ function CalorieRing({
   )
 }
 
-// ── Macro Bar ───────────────────────────────────────────────────────
 function MacroBar({
   label,
   value,
@@ -80,7 +76,6 @@ function MacroBar({
   )
 }
 
-// ── Stat Chip ───────────────────────────────────────────────────────
 function StatChip({
   label,
   value,
@@ -99,7 +94,6 @@ function StatChip({
   )
 }
 
-// ── Measurement Row ─────────────────────────────────────────────────
 function MeasurementRow({
   label,
   value,
@@ -131,7 +125,6 @@ function MeasurementRow({
   )
 }
 
-// ── Main Page ───────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const [latestMetric, setLatestMetric] = useState<BodyMetric | null>(null)
@@ -205,7 +198,6 @@ export default function DashboardPage() {
       <div className="min-h-screen">
         <main className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
 
-          {/* ── TDEE / BMR Chips ─────────────────────── */}
           {(tdeeData || latestMetric?.weight) && (
             <div className="flex items-stretch gap-3 flex-wrap">
               {tdeeData && (
@@ -256,10 +248,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── Main Cards Row ────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            {/* Питание */}
             {(profile?.target_calories || profile?.target_proteins || profile?.target_fats || profile?.target_carbs) && (
               <Link href="/diary?tab=nutrition" className="group">
                 <Card className="h-full border-white/8 bg-card/60 hover:bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
@@ -273,7 +263,7 @@ export default function DashboardPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-5">
-                    {/* Ring + calories */}
+
                     {profile?.target_calories && (
                       <div className="flex items-center gap-4">
                         <div className="relative shrink-0">
@@ -304,7 +294,6 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Macro bars */}
                     {(profile?.target_proteins || profile?.target_fats || profile?.target_carbs) && (
                       <div className="space-y-2.5 pt-1 border-t border-white/8">
                         {profile?.target_proteins && profile.target_proteins > 0 && (
@@ -323,7 +312,6 @@ export default function DashboardPage() {
               </Link>
             )}
 
-            {/* Замеры тела */}
             <Link href="/diary?tab=metrics" className="group">
               <Card className="h-full border-white/8 bg-card/60 hover:bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
                 <CardHeader className="pb-3">
@@ -338,7 +326,7 @@ export default function DashboardPage() {
                 <CardContent>
                   {latestMetric ? (
                     <div className="space-y-3">
-                      {/* Вес — крупно */}
+
                       {latestMetric.weight && (
                         <div className="flex items-end gap-2 pb-3 border-b border-white/8 flex-wrap">
                           <span className="text-3xl font-bold">{latestMetric.weight}</span>
@@ -351,7 +339,6 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Остальные замеры */}
                       <div className="space-y-2.5">
                         {latestMetric.chest && (
                           <MeasurementRow label="Грудь" value={latestMetric.chest} target={profile?.target_chest} />
@@ -382,7 +369,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* ── Charts ───────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="h-[320px] sm:h-[360px]">
               <WeightChart

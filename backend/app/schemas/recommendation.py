@@ -1,11 +1,7 @@
-"""
-Pydantic схемы для рекомендаций тренировок и логирования выполнения
-"""
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from uuid import UUID
-
 
 class RecommendedExercise(BaseModel):
     exercise_id: str
@@ -15,7 +11,6 @@ class RecommendedExercise(BaseModel):
     reps: int
     rest_time: int
     reason: str
-
 
 class WorkoutRecommendationResponse(BaseModel):
     id: UUID
@@ -27,7 +22,6 @@ class WorkoutRecommendationResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class ExercisePerformanceLogCreate(BaseModel):
     exercise_id: UUID
     source_type: str = Field(..., pattern="^(program|recommendation|free)$")
@@ -37,7 +31,6 @@ class ExercisePerformanceLogCreate(BaseModel):
     weight_kg: Optional[float] = Field(None, ge=0, le=500)
     rpe: Optional[int] = Field(None, ge=1, le=10)
     notes: Optional[str] = None
-
 
 class ExercisePerformanceLogResponse(BaseModel):
     id: UUID

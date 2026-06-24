@@ -1,6 +1,4 @@
-/**
- * Компонент карточки для отображения контента
- */
+
 import React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -102,4 +100,3 @@ export const CardFooter = React.forwardRef<HTMLDivElement, CardProps>(
 )
 
 CardFooter.displayName = 'CardFooter'
-

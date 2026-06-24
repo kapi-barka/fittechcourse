@@ -1,6 +1,4 @@
-/**
- * Helper functions
- */
+
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -18,7 +16,7 @@ export function getDayName(dayNumber: number): string {
     'Суббота',
     'Воскресенье'
   ]
-  // dayNumber 1-7
+
   if (dayNumber >= 1 && dayNumber <= 7) {
     return days[dayNumber - 1]
   }
